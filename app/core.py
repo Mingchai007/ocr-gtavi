@@ -188,6 +188,7 @@ class Hotkeys(QObject):
 # ---------------------------------------------------------------- ตัวโปรแกรม
 class App(QObject):
     live_done = pyqtSignal(str, str)
+    update_done = pyqtSignal(object, object)      # (ผลอัปเดต dict หรือ None, ข้อความผิดพลาด หรือ None)
     MISSED = ROOT / "data" / "missed.tsv"
 
     def __init__(self, qapp, args, on_progress=None):
@@ -241,6 +242,12 @@ class App(QObject):
         self.panel.show()
         self._watch_show_request()
 
+        self.update_done.connect(self._on_update_done)
+        self._updating = False
+        self._update_status = (self._corpus_label(), True)
+        if self.s["auto_update"]:
+            QTimer.singleShot(3000, lambda: self.check_update(manual=False))     # รอโปรแกรมเปิดเสร็จก่อน
+
         if args.select:
             self.select_region()
         elif not self.s.get("region"):
@@ -274,6 +281,63 @@ class App(QObject):
         self.tray.setContextMenu(menu)
         self.tray.show()
         self.menu = menu
+
+    # --- อัปเดตคลังคำแปล
+    def _corpus_label(self):
+        from app import updater
+        v = updater.local_version()
+        src = updater.repo()
+        if not src:
+            return "ยังไม่ได้ตั้งแหล่งอัปเดต"
+        return f"คลังเวอร์ชัน {updater.version_label(v)}" if v else "คลังที่ติดมากับโปรแกรม"
+
+    def _set_update_status(self, text, ok=True, busy=False):
+        self._update_status = (text, ok)
+        if self.settings_dlg is not None and self.settings_dlg.isVisible():
+            self.settings_dlg.set_update_status(text, ok, busy)
+
+    def check_update(self, manual=True):
+        if self._updating:
+            return
+        self._updating = True
+        self._set_update_status("กำลังเช็กคลังใหม่…", True, busy=True)
+
+        def work():
+            from app import updater
+            from app.matcher import Matcher
+            try:
+                res = updater.check_and_update()
+                if res["updated"]:
+                    res["matcher"] = Matcher(log_missing=False)      # สร้างดัชนีใหม่เบื้องหลัง (~0.5 วิ)
+                self.update_done.emit(res, None)
+            except Exception as e:                                   # เน็ตหลุด/GitHub ล่ม -> ใช้คลังเดิมต่อ
+                msg = str(e) if isinstance(e, updater.UpdateError) else f"{type(e).__name__}: {e}"
+                log(f"[update] {msg}")
+                self.update_done.emit(None, msg)
+        self._update_manual = manual
+        threading.Thread(target=work, daemon=True).start()
+
+    def _on_update_done(self, res, err):
+        from app import updater
+        self._updating = False
+        if err:
+            self._set_update_status(f"{err} — ใช้คลังเดิมต่อ", ok=False)
+            return
+        if not res["updated"]:
+            self._set_update_status(f"{self._corpus_label()} — ล่าสุดแล้ว", True)
+            return
+        old = self.tr.matcher.base_count
+        with self.tr.lock:
+            self.tr.matcher = res["matcher"]                        # สลับคลังทันที ไม่ต้องปิดโปรแกรม
+        new = self.tr.matcher.base_count
+        self.panel.set_total_lines(new)
+        diff = new - old
+        msg = f"อัปเดตคลังแล้ว ({updater.version_label(res['version'])})"
+        if diff > 0:
+            msg += f" +{diff:,} ประโยค"
+        log(f"[update] {msg}, เก็บคำแปลสดของเครื่องนี้ไว้ {res['live_kept']} ประโยค")
+        self._set_update_status(msg, True)
+        self.tray.showMessage("ซับไทย GTA VI", msg + (f"\n{res['notes']}" if res["notes"] else ""), T.app_icon(), 4000)
 
     def show_panel(self):
         self.panel.show()
@@ -493,6 +557,8 @@ class App(QObject):
     def open_settings(self):
         if self.settings_dlg is None or not self.settings_dlg.isVisible():
             self.settings_dlg = SettingsDialog(self.s, live_status=self.tr.status)
+            self.settings_dlg.set_update_status(*self._update_status, busy=self._updating)
+            self.settings_dlg.update_req.connect(lambda: self.check_update(manual=True))
             self.settings_dlg.changed.connect(lambda s: self.apply_settings({**s, "region": self.s.get("region")}))
             self.settings_dlg.finished.connect(lambda _r: self.overlay.clear_sample())
             self.settings_dlg.show()

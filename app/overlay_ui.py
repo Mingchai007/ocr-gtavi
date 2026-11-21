@@ -456,6 +456,7 @@ class SubtitlePreview(QWidget):
 # ---------------------------------------------------------------- หน้าตั้งค่า
 class SettingsDialog(QDialog):
     changed = pyqtSignal(dict)
+    update_req = pyqtSignal()                   # ผู้ใช้กด "เช็กอัปเดตตอนนี้"
     WEIGHTS = [("ปกติ", 400), ("กลาง", 600), ("หนา", 700), ("หนามาก", 900)]
     FPS = [("ประหยัดเครื่อง", 15), ("ปกติ", 30), ("ไวที่สุด", 60)]
 
@@ -467,6 +468,7 @@ class SettingsDialog(QDialog):
         self.setFixedWidth(500)
         self.s = dict(s)
         self.live_status = live_status          # ฟังก์ชันคืน (ข้อความสถานะตัวแปลสด, พร้อมใช้ไหม)
+        self._update_status = ("", True)
 
         lay = QVBoxLayout(self)
         lay.setContentsMargins(16, 16, 16, 14)
@@ -628,6 +630,20 @@ class SettingsDialog(QDialog):
         note.setWordWrap(True)
         lay.addWidget(note)
         lay.addWidget(hline())
+        lay.addWidget(self._option("auto_update", "อัปเดตคลังคำแปลอัตโนมัติ",
+                                   "เช็กตอนเปิดโปรแกรม โหลดเฉพาะคลังใหม่ (~4 MB) ไม่ต้องโหลดโปรแกรมใหม่ทั้งก้อน"))
+        row = QHBoxLayout()
+        row.setSpacing(8)
+        self.update_lbl = QLabel()
+        self.update_lbl.setObjectName("Muted")
+        self.update_lbl.setWordWrap(True)
+        self.update_btn = button(" เช็กตอนนี้", T.Glyph.RESET)
+        self.update_btn.clicked.connect(self._ask_update)
+        row.addWidget(self.update_lbl, 1)
+        row.addWidget(self.update_btn)
+        lay.addLayout(row)
+        self.set_update_status(*self._update_status)
+        lay.addWidget(hline())
         t = QLabel("แชร์การตั้งค่าให้เพื่อน")
         t.setObjectName("RowTitle")
         lay.addWidget(t)
@@ -654,6 +670,21 @@ class SettingsDialog(QDialog):
         row.addWidget(b_dir, 1)
         row.addWidget(b_log, 1)
         lay.addLayout(row)
+
+    # --- อัปเดตคลัง
+    def _ask_update(self):
+        self.update_btn.setEnabled(False)
+        self.set_update_status("กำลังเช็ก…", True)
+        self.update_req.emit()
+
+    def set_update_status(self, text, ok=True, busy=False):
+        self._update_status = (text, ok)
+        try:
+            self.update_lbl.setText(text)
+            self.update_lbl.setStyleSheet("" if ok else f"color:{T.WARN};")
+            self.update_btn.setEnabled(not busy)
+        except (AttributeError, RuntimeError):     # หน้ายังไม่ถูกสร้าง/ถูกสร้างใหม่
+            pass
 
     # --- ตัวช่วยสร้างช่องตั้งค่า
     def _set(self, k, v):

@@ -55,7 +55,10 @@
 
 ## 5. ต่อยอด (ยังไม่ได้ทำ — ต้องใช้ของจากคุณก่อน)
 
-- [ ] **อัปเดตคลังอัตโนมัติผ่าน GitHub Releases** — ต้องมี repo + release ที่วาง `translations.db.gz` ก่อน (บอกชื่อ repo มาแล้วทำตัวโหลดให้ได้)
+- [x] **อัปเดตคลังอัตโนมัติผ่าน GitHub Releases** (`app/updater.py`, `scripts/publish_corpus.py`) — แหล่ง: `data/update_source.json` = `Mingchai007/ocr-gtavi`
+  - [ ] ตั้ง repo เป็น **Public** (ไม่งั้นเครื่องเพื่อนโหลดไม่ได้)
+  - [ ] สร้างโทเคน GitHub (Fine-grained, เฉพาะ repo นี้, Contents = Read and write) แล้วปล่อยคลังชุดแรก
+  - ทุกครั้งที่เติมคำแปล: `$env:GITHUB_TOKEN = "..."` แล้ว `.\.venv\Scripts\python.exe scripts\publish_corpus.py --notes "เพิ่มอะไร"`
 - [ ] **เก็บประโยคตกหล่นจากเครื่องเพื่อนอัตโนมัติ** (Google Sheet / Discord Webhook) — ต้องมีลิงก์ webhook และควรบอกเพื่อนก่อนว่าโปรแกรมส่งข้อความซับออกไป
 - [ ] **เติมคลิปภารกิจเสริม / เหตุการณ์สุ่ม** — หาลิงก์คลิป No Commentary ใส่ `data/sources.txt` แล้วรันขั้น 0 → 1 → แปล
 - [ ] (ถ้าอยากเป๊ะขึ้นอีก) ให้ AI แบ่งบรรทัดยาว > 120 ตัวอักษรในคลังเป็นท่อนๆ — ตอนนี้โปรแกรมจับคู่ท่อนให้เองอัตโนมัติแล้ว (ถูก ~90%) ขั้นนี้คือเก็บ 10% ที่เหลือ
@@ -78,6 +81,7 @@ cls
 | ส่งออก JSON ไว้เปิดดู | `.\.venv\Scripts\python.exe scripts\3_export_json.py` |
 | โหลด + คลีนคลิปใหม่ | `.\.venv\Scripts\python.exe scripts\0_download_subs.py` แล้ว `scripts\1_clean_vtt.py` |
 | ดูรุ่น Gemini ที่ใช้ได้ | `.\.venv\Scripts\python.exe scripts\2_batch_translate.py --list-models` |
+| ปล่อยคลังใหม่ให้ทุกเครื่อง (~4 MB) | `.\.venv\Scripts\python.exe scripts\publish_corpus.py --notes "..."` (ต้องตั้ง `$env:GITHUB_TOKEN` ก่อน) |
 | สร้าง .exe + ZIP แจกเพื่อน | `.\.venv\Scripts\python.exe scripts\build_release.py` |
 | สร้างทางลัดเปิดโปรแกรม (ไม่มี cmd) | `.\.venv\Scripts\python.exe scripts\make_shortcut.py` (เติม `--desktop` = วางบนเดสก์ท็อปด้วย) |
 | เปลี่ยนโลโก้/ไอคอน | วางไฟล์ทับ `assets_src\logo.png` แล้ว `.\.venv\Scripts\python.exe scripts\make_assets.py` |

@@ -209,8 +209,10 @@ class ControlPanel(QWidget):
         box.setSpacing(0)
         title = QLabel("ซับไทย GTA VI")
         title.setObjectName("Title")
-        sub = QLabel(f"คลังคำแปล {total_lines:,} ประโยค พร้อมใช้งาน" if total_lines else "ซับไทยทับเกมแบบเรียลไทม์")
+        sub = QLabel()
         sub.setObjectName("SubTitle")
+        self.sub_lbl = sub
+        self.set_total_lines(total_lines)
         box.addStretch(1)
         box.addWidget(title)
         box.addWidget(sub)
@@ -373,6 +375,9 @@ class ControlPanel(QWidget):
         self.btn_toggle.setIcon(T.glyph_icon(T.Glyph.PAUSE if on else T.Glyph.PLAY, T.TEXT if on else "#FFFFFF"))
         self.btn_toggle.setProperty("running", "true" if on else "false")
         restyle(self.btn_toggle)
+
+    def set_total_lines(self, n):
+        self.sub_lbl.setText(f"คลังคำแปล {n:,} ประโยค พร้อมใช้งาน" if n else "ซับไทยทับเกมแบบเรียลไทม์")
 
     def set_note(self, text, ok=True):
         self.region_lbl.setStyleSheet(f"color:{T.OK if ok else T.DANGER}; font-size:9pt; font-weight:600;")

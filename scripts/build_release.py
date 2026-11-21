@@ -113,8 +113,11 @@ def main():
     # คัดลอกไฟล์ data ที่จำเป็นเท่านั้น (ไม่รวม backup / settings ส่วนตัว / คีย์)
     data_out = OUT_DIR / "data"
     data_out.mkdir(parents=True, exist_ok=True)
-    for fname in ("translations.db", "glossary.json", "style_guide.md", "quick_phrases.json"):
+    for fname in ("translations.db", "glossary.json", "style_guide.md", "quick_phrases.json", "update_source.json"):
         shutil.copy2(ROOT / "data" / fname, data_out / fname)
+    # เวอร์ชันของคลังที่ติดไปกับโปรแกรม (จาก publish_corpus.py ครั้งล่าสุด) -> เพื่อนไม่ต้องโหลดคลังเดิมซ้ำ
+    if (ROOT / "data" / "corpus_version.json").exists():
+        shutil.copy2(ROOT / "data" / "corpus_version.json", data_out / "corpus_version.json")
 
     (OUT_DIR / "วิธีใช้งาน.txt").write_text(README_TH, encoding="utf-8")
 
