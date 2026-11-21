@@ -242,6 +242,9 @@ class App(QObject):
         self.panel.show()
         self._watch_show_request()
 
+        from app import updater
+        from app.reporter import Reporter
+        self.reporter = Reporter(enabled=self.s["report_missed"], corpus_version=updater.local_version())
         self.update_done.connect(self._on_update_done)
         self._updating = False
         self._update_status = (self._corpus_label(), True)
@@ -437,6 +440,7 @@ class App(QObject):
         if text in self._missed or any(fuzz.ratio(text, m) >= 85 for m in self._missed[-300:]):
             return
         self._missed.append(text)
+        self.reporter.add(text)                     # ส่งให้ผู้ทำคลังเบื้องหลัง (ถ้าเปิดไว้)
         try:
             with open(self.MISSED, "a", encoding="utf-8") as f:
                 f.write(time.strftime("%Y-%m-%d %H:%M") + "\t" + text + "\n")
@@ -471,6 +475,7 @@ class App(QObject):
         region_changed = s.get("region") != old.get("region")
         self.s = s
         cfg.save(s)
+        self.reporter.enabled = s["report_missed"]
         if (s["gemini_key"], s["use_mymemory"]) != (old["gemini_key"], old["use_mymemory"]):
             self.tr.configure(s["gemini_key"], s["use_mymemory"])
         self.overlay.apply_settings({**s, "obs_mode": False})
@@ -556,7 +561,7 @@ class App(QObject):
 
     def open_settings(self):
         if self.settings_dlg is None or not self.settings_dlg.isVisible():
-            self.settings_dlg = SettingsDialog(self.s, live_status=self.tr.status)
+            self.settings_dlg = SettingsDialog(self.s, live_status=self.tr.status, can_report=self.reporter.available)
             self.settings_dlg.set_update_status(*self._update_status, busy=self._updating)
             self.settings_dlg.update_req.connect(lambda: self.check_update(manual=True))
             self.settings_dlg.changed.connect(lambda s: self.apply_settings({**s, "region": self.s.get("region")}))
@@ -576,6 +581,7 @@ class App(QObject):
          }[name]()
 
     def quit(self):
+        self.reporter.flush(2.0)                    # ส่งประโยคที่ค้างอยู่ก่อนปิด
         self.worker.running = False
         self.worker.wait(1500)
         self.tray.hide()

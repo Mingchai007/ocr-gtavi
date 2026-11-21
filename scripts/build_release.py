@@ -116,6 +116,9 @@ def main():
     for fname in ("translations.db", "glossary.json", "style_guide.md", "quick_phrases.json", "update_source.json"):
         shutil.copy2(ROOT / "data" / fname, data_out / fname)
     # เวอร์ชันของคลังที่ติดไปกับโปรแกรม (จาก publish_corpus.py ครั้งล่าสุด) -> เพื่อนไม่ต้องโหลดคลังเดิมซ้ำ
+    # ปลายทางรับประโยคตกหล่น (ลิงก์ webhook ไม่เก็บใน git จึงคัดลอกจากเครื่องนี้ตอน build)
+    if (ROOT / "data" / "report_target.json").exists():
+        shutil.copy2(ROOT / "data" / "report_target.json", data_out / "report_target.json")
     if (ROOT / "data" / "corpus_version.json").exists():
         shutil.copy2(ROOT / "data" / "corpus_version.json", data_out / "corpus_version.json")
 

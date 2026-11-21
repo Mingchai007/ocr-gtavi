@@ -9,7 +9,7 @@ PATH = ROOT / "data" / "settings.json"
 CODE_PREFIX = "GTHSUB1:"
 VERSION = 2
 # ค่าที่ผูกกับเครื่อง/จอ/บัญชีของแต่ละคน -> ไม่ใส่ในโค้ดแชร์
-LOCAL_KEYS = {"region", "live_translate", "gemini_key", "use_mymemory", "auto_update", "_v"}
+LOCAL_KEYS = {"region", "live_translate", "gemini_key", "use_mymemory", "auto_update", "report_missed", "_v"}
 
 DEFAULTS = {
     "_v": VERSION,
@@ -45,6 +45,8 @@ DEFAULTS = {
     "use_mymemory": False,       # ตัวแปลสำรองฟรี ไม่ต้องมีคีย์ แต่สำนวนแข็ง
     # อัปเดตคลังคำแปลจาก GitHub Releases ตอนเปิดโปรแกรม
     "auto_update": True,
+    # ส่งประโยคที่ยังไม่มีคำแปลให้ผู้ทำคลัง (Discord/Google Sheet ตาม data/report_target.json)
+    "report_missed": True,
 }
 
 

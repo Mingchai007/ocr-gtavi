@@ -17,6 +17,9 @@ data/corpus_version.json
 data/*.bak
 data/.update_tmp/
 data/claude_batch*.json
+data/reported.txt
+# ลิงก์ Discord webhook / Google Sheet (ถ้าหลุดในที่สาธารณะ ใครก็ส่งข้อความเข้าห้องได้)
+data/report_target.json
 
 # สำรอง/ไฟล์ทดลองระหว่างพัฒนา
 data/_dev_archive/

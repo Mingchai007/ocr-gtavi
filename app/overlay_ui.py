@@ -460,7 +460,7 @@ class SettingsDialog(QDialog):
     WEIGHTS = [("ปกติ", 400), ("กลาง", 600), ("หนา", 700), ("หนามาก", 900)]
     FPS = [("ประหยัดเครื่อง", 15), ("ปกติ", 30), ("ไวที่สุด", 60)]
 
-    def __init__(self, s, parent=None, live_status=None):
+    def __init__(self, s, parent=None, live_status=None, can_report=False):
         super().__init__(parent)
         self.setObjectName("Root")
         self.setWindowTitle("ตั้งค่า — ซับไทย GTA VI")
@@ -469,6 +469,7 @@ class SettingsDialog(QDialog):
         self.s = dict(s)
         self.live_status = live_status          # ฟังก์ชันคืน (ข้อความสถานะตัวแปลสด, พร้อมใช้ไหม)
         self._update_status = ("", True)
+        self.can_report = can_report            # มีปลายทางรับประโยคตกหล่น (data/report_target.json) ไหม
 
         lay = QVBoxLayout(self)
         lay.setContentsMargins(16, 16, 16, 14)
@@ -643,6 +644,10 @@ class SettingsDialog(QDialog):
         row.addWidget(self.update_btn)
         lay.addLayout(row)
         self.set_update_status(*self._update_status)
+        if self.can_report:
+            lay.addWidget(hline())
+            lay.addWidget(self._option("report_missed", "ส่งประโยคที่ยังไม่มีคำแปลให้ผู้ทำคลัง",
+                                       "ส่งเฉพาะซับอังกฤษที่อ่านได้จากจอ เบื้องหลัง ไม่หน่วงเกม — จะได้เติมคลังให้ทุกคน"))
         lay.addWidget(hline())
         t = QLabel("แชร์การตั้งค่าให้เพื่อน")
         t.setObjectName("RowTitle")
