@@ -180,7 +180,7 @@ class OcrEngine:
             if abs(center / full_w - 0.5) > 0.26:     # ซับอยู่กลาง ตัวหนังสือที่เยื้องข้างมาก = พื้นหลัง/UI
                 continue
             keep.append((y, txt))
-        return clean(" ".join(t for _, t in sorted(keep)))
+        return clean("\n".join(t for _, t in sorted(keep)))
 
     def read_region(self, region):
         """คืนข้อความใหม่, "" ถ้าไม่มีซับ, หรือ None ถ้าภาพไม่เปลี่ยนจากครั้งก่อน"""
@@ -202,8 +202,10 @@ class OcrEngine:
 
 
 def clean(text):
+    """ทำความสะอาดข้อความจาก OCR (คงการขึ้นบรรทัดไว้ — แต่ละบรรทัดอาจเป็นคนพูดคนละคน)"""
     text = text.replace("|", "I").replace("’", "'").replace("‘", "'").replace("“", '"').replace("”", '"')
-    text = re.sub(r"\s+", " ", text).strip()
+    lines = (re.sub(r"[^\S\n]+", " ", ln).strip() for ln in text.split("\n"))
+    text = "\n".join(ln for ln in lines if ln)
     # ตัดเศษอักขระที่ OCR อ่านจากขอบ/เงา (ไม่มีตัวอักษรเลย)
     return text if re.search(r"[A-Za-z]{2,}", text) else ""
 

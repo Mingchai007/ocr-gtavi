@@ -201,16 +201,22 @@ class SubtitleOverlay(QWidget):
 
     # --- ข้อมูลซับ
     def set_line(self, th, en="", speaker="", sample=False):
-        line = {"th": th, "en": en, "speaker": speaker}
+        self.set_parts([(speaker, th)], en, new_line=True, sample=sample)
+
+    def set_parts(self, parts, en="", new_line=True, sample=False):
+        """แสดงซับ: parts = [(ชื่อคนพูด, คำแปลไทย)] — หลายคนพูดพร้อมกันได้ (แสดงคนละบรรทัด)
+        new_line=False = ซับเดิมบนจอ แค่เติม/แก้คำแปล -> ไม่ดันขึ้นไปเป็นประโยคก่อนหน้า"""
+        th = "  ".join(t for _, t in parts)
+        speaker = parts[0][0] if len(parts) == 1 else ""
+        line = {"th": th, "en": en, "speaker": speaker, "parts": list(parts)}
         was_sample, self.is_sample = self.is_sample, sample
         self.hide_timer.stop()
-        if self.current and self.current["en"] != en and not was_sample:
-            self.history.append((time.time(), self.current))
-            self.history = self.history[-5:]
+        if self.current and new_line and not was_sample and self.current["th"] != th:
+            self._remember(self.current)
         self.current = line
         self.shown_at = time.time()
         if self.mirror:
-            self.mirror.set_line(th, en, speaker)
+            self.mirror.set_parts(parts, en, new_line, sample)
         if not self.isVisible():
             self.show()
         self.update()
@@ -262,10 +268,17 @@ class SubtitleOverlay(QWidget):
         except Exception:
             pass
 
+    def _remember(self, line):
+        """เก็บเป็น "ประโยคก่อนหน้า" (ไม่เก็บซ้ำประโยคเดียวกันติดกัน)"""
+        if self.history and self.history[-1][1]["th"] == line["th"]:
+            self.history[-1] = (time.time(), line)
+            return
+        self.history.append((time.time(), line))
+        self.history = self.history[-5:]
+
     def _hide_current(self):
         if self.current and not self.is_sample:
-            self.history.append((time.time(), self.current))
-            self.history = self.history[-5:]
+            self._remember(self.current)
         self.current = None
         self.is_sample = False
         self.update()
@@ -281,9 +294,11 @@ class SubtitleOverlay(QWidget):
         if s["prev_lines"] > 0:
             prev = [ln for t, ln in self.history if now - t < self.PREV_TTL][-s["prev_lines"]:]
             for ln in prev:
-                out.append((ln["th"], s["prev_scale"], 0.6, ln["speaker"]))
+                for spk, th in ln.get("parts") or [(ln["speaker"], ln["th"])]:
+                    out.append((th, s["prev_scale"], 0.6, spk))
         cur = self.current
-        out.append((cur["th"], 1.0, 1.0, cur["speaker"]))
+        for spk, th in cur.get("parts") or [(cur["speaker"], cur["th"])]:
+            out.append((th, 1.0, 1.0, spk))                 # หลายคนพูด -> คนละบรรทัด พร้อมชื่อ
         if s["show_english"] and cur["en"]:
             out.append((cur["en"], 0.55, 0.85, ""))
         return out

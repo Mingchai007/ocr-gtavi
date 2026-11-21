@@ -10,7 +10,7 @@ import threading
 import time
 import traceback
 
-from rapidfuzz import fuzz
+from rapidfuzz import fuzz, process
 
 from PyQt6.QtCore import QObject, QThread, Qt, QTimer, pyqtSignal
 from PyQt6.QtGui import QAction
@@ -26,9 +26,51 @@ from app.ocr_engine import OcrEngine
 from app.overlay_ui import HistoryWindow, ObsFeed, RegionSelector, SettingsDialog, SubtitleOverlay
 from app.widgets import polish_popup
 
-SPEAKER = re.compile(r"^\s*([A-Z][\w'.\-]*(?: [A-Z][\w'.\-]*){0,2}):\s*(.+)$")
+SPEAKER = re.compile(r"^\s*([A-Z][\w'.\-]*(?: [A-Z][\w'.\-]*){0,2}):\s*(.+)$", re.S)
+TURN_START = re.compile(r"^(?:[-–—]\s*)?[A-Z][\w'.\-]*(?: [A-Z][\w'.\-]*){0,2}:\s+\S")   # บรรทัดขึ้นต้นด้วย "ชื่อ:"
+DASH = re.compile(r"^[-–—]\s*(?=\S)")                                                     # "- ประโยค" = อีกคนพูด
 SENTENCE = re.compile(r"(?<=[.?!])\s+")
+JUNK_CHAR = re.compile(r"(?<!\S)[B-HJ-Zb-z0Oo@&*#%$^~=+<>]{1}(?!\S)")
 CLAUSE = re.compile(r"(?<=[,;—–])\s+")
+SAME_LINE = 70          # ความเหมือนของข้อความ (0-100) ที่ถือว่าเป็นซับประโยคเดิม แค่ OCR อ่านเพี้ยน
+EMPTY_GRACE_MS = 220    # ซับหายจากจอต่อเนื่องนานเท่านี้ก่อนถึงจะเริ่มซ่อน (กันซับสั้นๆ ที่ OCR อ่านพลาดเฟรมเดียว)
+CONFIRM_MS = 160        # ซับใหม่ที่ "คล้ายซับเดิม" ต้องไม่มีเฟรมซับเดิมแทรกภายในเวลานี้ ถึงจะเปลี่ยน (กัน OCR อ่านเพี้ยน)
+
+
+def flat(text):
+    return " ".join(text.split())
+
+
+def _fix_colons(turn):
+    """โคลอน/อัฒภาคที่อยู่หลังชื่อคนพูดแล้ว = OCR อ่านจุดเพี้ยน ("I'm driving: Obey.") -> เปลี่ยนเป็นจุด
+    ไม่งั้นตัวค้นคลังจะเข้าใจว่าข้อความหน้าโคลอนเป็นชื่อคนพูดแล้วตัดทิ้ง"""
+    m = SPEAKER.match(turn)
+    head, body = (turn[:m.start(2)], m.group(2)) if m else ("", turn)
+    return head + re.sub(r"\s*[:;]+(?=\s|$)", ".", body)
+
+
+def split_turns(text, names=()):
+    """แยกข้อความจากจอเป็นบทพูดของแต่ละคน (ซับเกมอาจขึ้นหลายคนพร้อมกัน เช่น
+    "Jason: Hey." บรรทัดหนึ่ง "Lucia: What?" อีกบรรทัด) — บรรทัดที่ไม่มีชื่อ = ประโยคเดิมที่ขึ้นบรรทัดใหม่"""
+    turns = []
+    for line in text.split("\n"):
+        line = line.strip().lstrip(".,;:'\"`~•·*«»").strip()       # เศษจุด/เงาหน้าบรรทัดจาก OCR
+        if not line:
+            continue
+        if not turns or TURN_START.match(line) or DASH.match(line):
+            turns.append(DASH.sub("", line))
+        else:
+            turns[-1] += " " + line
+    # ตัวอักษรเดี่ยวที่หลุดมาจากขอบ/เงา (เช่น "No. O") -> ตัดทิ้ง ไม่งั้นไปตรงกับประโยคอื่นในคลัง
+    if names:                                  # "Lucia; Yeah." / "Lucia. Yeah." = OCR อ่านโคลอนหลังชื่อเพี้ยน
+        lead = re.compile(r"^(" + "|".join(re.escape(n) for n in names) + r")\s*[;.,]\s+")
+        turns = [lead.sub(r"\1: ", t) for t in turns]
+    turns = [" ".join(JUNK_CHAR.sub("", t).split()) for t in turns]
+    turns = [_fix_colons(t) for t in turns if t]
+    if names:                                  # OCR รวมสองคนเป็นบรรทัดเดียว: "Hey. Lucia: What?"
+        pat = re.compile(r"(?<=[.?!])\s+(?=(?:" + "|".join(re.escape(n) for n in names) + r"):\s)")
+        turns = [p for t in turns for p in pat.split(t) if p.strip()]
+    return turns
 
 
 # ---------------------------------------------------------------- แปลข้อความจาก OCR
@@ -36,16 +78,40 @@ class Composer:
     """แบ่งข้อความเป็นประโยค แล้วจับคู่ช่วงที่ยาวที่สุดที่มีในคลัง (ซับเกมมักรวม 2 ประโยคในจอเดียว
     แต่คลังเก็บแยกกัน หรือกลับกัน) ส่วนที่ไม่มีในคลังส่งแปลสด"""
 
-    def __init__(self, translator, names):
+    def __init__(self, translator, names, people=None):
         self.tr = translator
         self.names = names
+        # ตัวละครที่พูดได้ (glossary.json "people") — ไม่รวมชื่อเมือง/แก๊ง จะได้ไม่เดาชื่อคนพูดเป็นชื่อสถานที่
+        people = list(people) if people else [n for n in names if n[:1].isupper() and " " not in n]
+        self.name_keys = sorted(people, key=len, reverse=True)
+        self._people = {re.sub(r"[^a-z]", "", n.lower()): n for n in self.name_keys}
+
+    def canonical(self, raw, cutoff=60):
+        """ชื่อคนพูดจาก OCR (อาจเพี้ยน เช่น "OLucia", "I-Cia", "Nason") -> ชื่อตัวละครที่รู้จัก หรือ "" ถ้าไม่รู้จัก"""
+        k = re.sub(r"[^a-z]", "", raw.lower())
+        if len(k) < 3:
+            return ""
+        if k in self._people:
+            return self._people[k]
+        hit = process.extractOne(k, list(self._people), scorer=fuzz.ratio, score_cutoff=cutoff)
+        return self._people[hit[0]] if hit else ""
 
     def split_speaker(self, text):
         m = SPEAKER.match(text)
         if not m:
             return "", text
-        name = m.group(1)
+        name = self.canonical(m.group(1)) or m.group(1)
         return self.names.get(name, name), m.group(2)
+
+    def compose_turns(self, text, live_cb=None, live=True, show_miss=True):
+        """แปลทุกบทพูดบนจอ -> [{"key": ชื่ออังกฤษ, "speaker": ชื่อไทย, "body": อังกฤษ, "th": ไทย, "partial": bool}]"""
+        out = []
+        for turn in split_turns(text, self.name_keys):
+            m = SPEAKER.match(turn)
+            key = self.canonical(m.group(1)) if m else ""          # "" = ไม่มีชื่อ / ชื่อที่ไม่รู้จัก
+            th, partial, speaker = self.compose(turn, live_cb, live, show_miss)
+            out.append({"key": key, "speaker": speaker, "body": m.group(2) if m else turn, "th": th, "partial": partial})
+        return out
 
     def compose(self, text, live_cb=None, live=True, show_miss=True):
         """คืน (คำแปลไทยรวม, มีส่วนที่ยังไม่ได้แปลไหม, ชื่อคนพูด)"""
@@ -202,7 +268,7 @@ class App(QObject):
         self.tr = SubtitleTranslator(gemini_key=self.s["gemini_key"], use_mymemory=self.s["use_mymemory"])
         g = json.loads((ROOT / "data" / "glossary.json").read_text(encoding="utf-8"))
         names = {k: v for k, v in g["names"].items() if "/" not in k}
-        self.composer = Composer(self.tr, names)
+        self.composer = Composer(self.tr, names, g.get("people"))
         m = self.tr.matcher
         log(f"โหลดคลัง {m.base_count:,} บรรทัด (ดัชนีค้นหา {len(m.keys):,} รายการ) ใน {time.time() - t:.1f} วิ")
         progress("กำลังเตรียมหน้าต่าง…")
@@ -213,7 +279,10 @@ class App(QObject):
         self.history = HistoryWindow()
         self.settings_dlg = None
         self.current_text = ""
-        self.shown_en = ""
+        self.shown = None                # บทพูดที่ซับไทยบนจอแสดงอยู่ (ผลของ compose_turns)
+        self.empty_timer = QTimer(self, singleShot=True, interval=EMPTY_GRACE_MS, timeout=self._subtitle_gone)
+        self._pending = None             # ซับใหม่ที่รอยืนยัน (turns, text, ms)
+        self.confirm_timer = QTimer(self, singleShot=True, interval=CONFIRM_MS, timeout=self._confirm_pending)
         self.enabled = True
         self._missed = None
         self.live_done.connect(self._on_live)
@@ -377,36 +446,134 @@ class App(QObject):
     def _on_text(self, text, ms):
         self.current_text = text
         if not text:
-            if self.debug:
-                log(f"[ocr {ms:.1f}ms] (ซับหาย)")
-            self.panel.show_reading("", "")
-            self.shown_en = ""
-            self.overlay.clear_soon()
+            # OCR อ่านไม่เจอซับ — อาจแค่พลาดเฟรมเดียว (ฉากสว่างวาบ/ซับสั้นๆ) -> รอให้หายจริงก่อน
+            if not self.empty_timer.isActive():
+                self.empty_timer.start()
             return
+        self.empty_timer.stop()
         t = time.perf_counter()
-        th, partial, speaker = self.composer.compose(
-            text, live_cb=lambda en, th, src: self.live_done.emit(en, th), live=self.s["live_translate"], show_miss=self.s["show_untranslated"])
+        turns = self.composer.compose_turns(
+            text, live_cb=lambda en, th, src: self.live_done.emit(en, th), live=self.s["live_translate"],
+            show_miss=self.s["show_untranslated"])
         find_ms = (time.perf_counter() - t) * 1000
+        partial = any(p["partial"] for p in turns)
         if self.debug:
-            log(f"[ocr {ms:.1f}ms + ค้น {find_ms:.2f}ms] {text!r} -> {th!r}{' (บางส่วนยังไม่มีในคลัง)' if partial else ''}")
-        if partial:
-            self.record_miss(text)
-        if partial and self.shown_en and fuzz.ratio(text, self.shown_en) >= 80:
-            return                                  # อ่านเพี้ยนจากประโยคเดิม ไม่ต้องสลับ
-        if not partial and self.shown_en and fuzz.ratio(text, self.shown_en) >= 93:
-            return                                  # ประโยคเดิมแค่อ่านอักขระต่างนิดเดียว ไม่ต้องกระพริบซ้ำ
-        self.panel.show_reading(text, th, ms + find_ms, "miss" if partial else "hit")
-        if th:
-            if not partial:
-                self.shown_en = text
-            if self.enabled:
-                self.overlay.set_line(th, text, speaker)
-                if not partial:
-                    self.history.add(th, text)
-        elif self.shown_en and fuzz.ratio(text, self.shown_en) < 70:
-            # ขึ้นประโยคใหม่แล้วแต่ยังไม่มีคำแปล -> ล้างซับเก่าออก ไม่ให้ค้างซับเดิม
-            self.shown_en = ""
-            self.overlay.clear_soon()
+            log(f"[ocr {ms:.1f}ms + ค้น {find_ms:.2f}ms] {text!r} -> {[(p['speaker'], p['th']) for p in turns]}"
+                f"{' (บางส่วนยังไม่มีในคลัง)' if partial else ''}")
+        for p in turns:
+            if p["partial"]:
+                self.record_miss(p["body"])
+        self._show(turns, text, ms + find_ms)
+
+    def _screen_text(self, turns):
+        """ข้อความทั้งจอสำหรับเทียบ: ตัดชื่อคนพูด (รวมชื่อที่ OCR อ่านเพี้ยน เช่น "Jasorv") และเศษตัวอักษรเดี่ยว"""
+        body = " ".join(p["body"] for p in turns).lower().replace("'", "").replace("’", "")
+        words = re.sub(r"[^a-z0-9 ]+", " ", body).split()
+        c = self.composer
+        return " ".join(w for w in words if (len(w) > 1 or w in ("i", "a")) and not (len(w) >= 4 and c.canonical(w, 70)))
+
+    def _compare(self, old, new):
+        """เทียบซับบนจอเดิมกับที่เพิ่งอ่านได้ -> "same" (ซับเดิม OCR อ่านเพี้ยน/อ่านขาด), "grow" (ซับเดิมยาวขึ้น),
+        หรือ "new" (ซับใหม่) — คนพูดที่รู้จักเปลี่ยน = ซับใหม่เสมอ แม้ข้อความเหมือนกัน (เจสัน "Yeah." -> ลูเซีย "Yeah.")"""
+        ko = [p["key"] for p in old if p["key"]]
+        kn = [p["key"] for p in new if p["key"]]
+        if ko and kn and not (set(kn) <= set(ko) or set(ko) <= set(kn)):
+            return "new"
+        a, b = self._screen_text(old), self._screen_text(new)
+        if not b:
+            return "same"            # เฟรมนี้เหลือแต่ชื่อคนพูด/เศษตัวอักษร (เช่น "Lucia9Yeah.") -> ไม่นับเป็นซับใหม่
+        if not a:
+            return "new"
+        if fuzz.ratio(a, b) >= SAME_LINE:
+            return "same"
+        short, long_ = (a, b) if len(a) <= len(b) else (b, a)
+        if len(short) >= 8 and len(short) >= 0.4 * len(long_) and fuzz.partial_ratio(short, long_) >= 90:
+            return "same" if len(b) <= len(a) else "grow"        # อ่านขาดไปบางส่วน / ซับขึ้นเพิ่ม
+        return "new"
+
+    def _clearly_new(self, old, new):
+        """ซับใหม่แน่ๆ (ไม่ต้องรอยืนยัน): คนพูดเปลี่ยน หรือข้อความคนละเรื่องกันเลย"""
+        ko = {p["key"] for p in old if p["key"]}
+        kn = {p["key"] for p in new if p["key"]}
+        if ko and kn and not (kn <= ko or ko <= kn):
+            return True
+        a, b = self._screen_text(old), self._screen_text(new)
+        if not b:
+            return False
+        if not a:
+            return True
+        return fuzz.ratio(a, b) < 45 and fuzz.partial_ratio(a, b) < 70
+
+    def _show(self, turns, text, ms, live=False):
+        shown = self.shown
+        verdict = "new" if shown is None else self._compare(shown, turns)
+        full_new = not any(p["partial"] for p in turns) and any(p["th"] for p in turns)
+        full_old = shown is not None and not any(p["partial"] for p in shown) and any(p["th"] for p in shown)
+        if verdict in ("same", "grow"):
+            self._drop_pending()                     # เฟรมนี้ยืนยันว่ายังเป็นซับเดิม
+            # ซับเดิมบนจอ แค่ OCR อ่านเพี้ยน -> คงคำแปลเดิมไว้ ไม่วาดใหม่ ไม่สลับคำแปล
+            # ยกเว้นรอบนี้อ่านได้ดีกว่า (แปลได้ครบ ในขณะที่ที่แสดงอยู่ยังไม่ครบ) -> เติมให้
+            if full_old or not full_new:
+                return
+            self._display(turns, text, ms, "fill", live)
+            return
+        if shown is not None and not any(p["th"] for p in turns) and any(p["th"] for p in shown):
+            # อ่านได้ข้อความที่ไม่มีคำแปลเลย: ถ้าเป็นเศษ/ขยะ หรือแค่ซับเดิมที่อ่านเพี้ยนหนัก -> ไม่ต้องล้างซับ
+            a, b = self._screen_text(shown), self._screen_text(turns)
+            if not looks_like_dialogue(flat(text)) or (b and len(b) <= 1.6 * len(a) + 6 and fuzz.partial_ratio(a, b) >= 80):
+                return
+        untranslated = not any(p["th"] for p in turns) and any(p["th"] for p in shown or ())
+        if shown is not None and not live and (untranslated or not self._clearly_new(shown, turns)):
+            pend = self._pending
+            if pend is None or self._compare(pend[0], turns) == "new":
+                self._pending = (turns, text, ms)    # คล้ายซับเดิม -> รอดูอีกนิดก่อนเปลี่ยน
+                self.confirm_timer.start()
+                return
+            pend_full = not any(p["partial"] for p in pend[0]) and any(p["th"] for p in pend[0])
+            same_th = [p["th"] for p in pend[0]] == [p["th"] for p in turns]
+            if not (full_new and pend_full and same_th):
+                # ยังไม่ชัวร์ (เฟรมเพี้ยนที่บังเอิญคล้ายกัน) -> รอให้ครบเวลายืนยัน เก็บเฟรมที่อ่านได้ดีกว่าไว้
+                if full_new and not pend_full:
+                    self._pending = (turns, text, ms)
+                return
+        self._drop_pending()
+        self._display(turns, text, ms, "new", live)
+
+    def _drop_pending(self):
+        self._pending = None
+        self.confirm_timer.stop()
+
+    def _confirm_pending(self):
+        """ไม่มีเฟรมซับเดิมแทรกเข้ามา -> ซับเปลี่ยนจริง"""
+        pend, self._pending = self._pending, None
+        if pend and self.current_text:
+            self._display(*pend, "new", False)
+
+    def _display(self, turns, text, ms, verdict, live):
+        shown_th = [p for p in turns if p["th"]]
+        state = "live" if live else ("miss" if any(p["partial"] for p in turns) else "hit")
+        self.panel.show_reading(flat(text), "  ".join(p["th"] for p in shown_th), ms, state)
+        if not shown_th:
+            # ประโยคใหม่ที่ยังไม่มีคำแปล -> ล้างซับเก่าออก ไม่ให้ค้างซับประโยคก่อน
+            if self.shown is not None and any(p["th"] for p in self.shown):
+                self.overlay.clear_soon()
+            self.shown = turns
+            return
+        self.shown = turns
+        if self.enabled:
+            parts = [(p["speaker"], p["th"]) for p in shown_th]
+            self.overlay.set_parts(parts, flat(text), new_line=verdict == "new")
+            if not any(p["partial"] for p in turns):
+                self.history.add("\n".join(f"{s}: {t}" if s else t for s, t in parts), flat(text))
+
+    def _subtitle_gone(self):
+        """ซับอังกฤษหายจากจอจริงแล้ว"""
+        if self.current_text:
+            return
+        self._drop_pending()
+        self.shown = None
+        self.panel.show_reading("", "")
+        self.overlay.clear_soon()
 
     def _on_live(self, en, th):
         try:
@@ -415,19 +582,14 @@ class App(QObject):
             log("[app] live:\n" + traceback.format_exc())
 
     def _on_live2(self, en, th):
-        # แปลสดเสร็จ -> ประกอบประโยคปัจจุบันใหม่ (ตอนนี้มีในคลังแล้ว) แล้วขึ้นจอทันที
-        if self.current_text and en in self.current_text:
-            th_all, partial, speaker = self.composer.compose(
-                self.current_text, live=False, show_miss=self.s["show_untranslated"])
-            if th_all and self.enabled:
-                self.panel.show_reading(self.current_text, th_all, None, "live")
-                self.overlay.set_line(th_all, self.current_text, speaker)
-                if not partial:
-                    self.shown_en = self.current_text
-                    self.history.add(th_all, self.current_text)
+        # แปลสดเสร็จ -> ประกอบบทพูดปัจจุบันใหม่ (ตอนนี้มีในคลังแล้ว) แล้วเติมคำแปลบนจอทันที
+        if self.current_text and en in flat(self.current_text):
+            turns = self.composer.compose_turns(self.current_text, live=False, show_miss=self.s["show_untranslated"])
+            self._show(turns, self.current_text, None, live=True)
 
     def record_miss(self, text):
         """เก็บประโยคที่แปลไม่ได้ไว้ (data/missed.tsv) เอาไปแปลเพิ่มเข้าคลังทีหลัง"""
+        text = flat(text)
         if len(text) < 6 or not looks_like_dialogue(text):
             return
         if self._missed is None:

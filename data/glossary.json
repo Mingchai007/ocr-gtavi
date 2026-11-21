@@ -24,6 +24,7 @@
     "PO / parole officer": "เจ้าหน้าที่คุมประพฤติ",
     "ankle monitor": "กำไล EM"
   },
+  "people": ["Jason", "Jay", "Lucia", "Cal", "Boobie", "Dre'Quan", "Raul", "Brian", "Donnie"],
   "slang": {
     "cop / five-o / pig": "ตำรวจ / ไอ้พวกหนวด / หมาต๋า",
     "piece / strap": "ปืน / ของ",
