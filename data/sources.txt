@@ -1,0 +1,88 @@
+# ใส่ลิงก์ YouTube ทีละบรรทัด (บรรทัดที่ขึ้นต้นด้วย # จะถูกข้าม)
+# รูปแบบ: <ชื่อไฟล์>  <URL>
+
+# Shirrako - GTA 6 Gameplay Walkthrough FULL GAME (No Commentary)
+gta6_part1  https://www.youtube.com/watch?v=BGUTv2K_SWs
+gta6_part2  https://www.youtube.com/watch?v=R55EMh-MsFM
+gta6_part3  https://www.youtube.com/watch?v=thbRvVOIlsM
+gta6_part4  https://www.youtube.com/watch?v=ZAn6MQuEe9c
+
+# Sirloin - Full Chapter Walkthrough (No Commentary)
+sirloin_ch1      https://www.youtube.com/watch?v=PlABTUWIgPc
+sirloin_ch2      https://www.youtube.com/watch?v=x5MyJPeynmQ
+sirloin_ch3      https://www.youtube.com/watch?v=QRg5GfhRiFo
+sirloin_part13   https://www.youtube.com/watch?v=4iBIbh1dg50
+sirloin_workout  https://www.youtube.com/watch?v=yzuKaCRMA9M
+
+# Sirloin - ทุกคลิปที่เกี่ยวกับ GTA 6 (ดึงจาก @Sirloin1/videos)
+sirloin_ch4                https://www.youtube.com/watch?v=W5lTn2skkiw   # GTA 6 - Full Chapter 4 Walkthrough (No Commentary) 4K
+sirloin_ch5                https://www.youtube.com/watch?v=4H1EnZRwoQ0   # GTA 6 - Full Chapter 5 Walkthrough (No Commentary) 4K
+sirloin_part01             https://www.youtube.com/watch?v=PQHShhCGwIw   # GTA 6 - Walkthrough Part 01 (No Commentary) 4K
+sirloin_part02             https://www.youtube.com/watch?v=Vc5-wQ2Igr0   # GTA 6 - Walkthrough Part 02 (No Commentary) 4K
+sirloin_part03             https://www.youtube.com/watch?v=699EFKhIKDo   # GTA 6 - Walkthrough Part 03 (No Commentary) 4K
+sirloin_part04             https://www.youtube.com/watch?v=CegbI07Z2Aw   # GTA 6 - Walkthrough Part 04 (No Commentary) 4K
+sirloin_part05             https://www.youtube.com/watch?v=tOElmBg_bW4   # GTA 6 - Walkthrough Part 05 (No Commentary) 4K
+sirloin_part06             https://www.youtube.com/watch?v=6p0mhOxrmCE   # GTA 6 - Walkthrough Part 06 (No Commentary) 4K
+sirloin_part07             https://www.youtube.com/watch?v=_38ndh7wU_s   # GTA 6 - Walkthrough Part 07 (No Commentary) 4K
+sirloin_part08             https://www.youtube.com/watch?v=Qi0mD1ZIhSQ   # GTA 6 - Walkthrough Part 08 (No Commentary) 4K
+sirloin_part09             https://www.youtube.com/watch?v=kjNgzm6Ae4k   # GTA 6 - Walkthrough Part 09 (No Commentary) 4K
+sirloin_part10             https://www.youtube.com/watch?v=6TpNo5qI48o   # GTA 6 - Walkthrough Part 10 (No Commentary) 4K
+sirloin_part11             https://www.youtube.com/watch?v=4sRUVS550Gc   # GTA 6 - Walkthrough Part 11 (No Commentary) 4K
+sirloin_part12             https://www.youtube.com/watch?v=fluk79x6ahY   # GTA 6 - Walkthrough Part 12 (No Commentary) 4K
+sirloin_part14             https://www.youtube.com/watch?v=8xm-nk6yafY   # GTA 6 - Walkthrough Part 14 (No Commentary) 4K
+sirloin_part15             https://www.youtube.com/watch?v=6XzXaRq6pao   # GTA 6 - Walkthrough Part 15 (No Commentary) 4K
+sirloin_part16             https://www.youtube.com/watch?v=4upgQJiVkmo   # GTA 6 - Walkthrough Part 16 (No Commentary) 4K
+sirloin_part17             https://www.youtube.com/watch?v=H-Zx-4WRPP4   # GTA 6 - Walkthrough Part 17 (No Commentary) 4K
+sirloin_part18             https://www.youtube.com/watch?v=Y7EmOj3iA0s   # GTA 6 - Walkthrough Part 18 (No Commentary) 4K
+sirloin_part19             https://www.youtube.com/watch?v=vuxNTt58Vk8   # GTA 6 - Walkthrough Part 19 (No Commentary) 4K
+sirloin_x_1FTxxTwYXJs      https://www.youtube.com/watch?v=1FTxxTwYXJs   # GTA 6: Visited Vice City for the First Time (4K)
+sirloin_x_2gBDYag_lEU      https://www.youtube.com/watch?v=2gBDYag_lEU   # GTA 6: Studio Session (Finger in my Booty Hole)
+sirloin_x_3oDAC9KPjR8      https://www.youtube.com/watch?v=3oDAC9KPjR8   # What If You come back to MANDY after finishing the Story? GTA 6
+sirloin_x_5Udl0wuBC_E      https://www.youtube.com/watch?v=5Udl0wuBC_E   # GTA 6: Finding the Lawyer in the Trash Can (Full Scene)
+sirloin_x_6Ad8FpZzLx4      https://www.youtube.com/watch?v=6Ad8FpZzLx4   # GTA 6: Lucia nurses Jason back to health (Full Scene)
+sirloin_x_6M2BKKsmiNc      https://www.youtube.com/watch?v=6M2BKKsmiNc   # GTA 6 - Car Heist and a high-speed Chase with the Cops (4K)
+sirloin_x_9C9mtubh984      https://www.youtube.com/watch?v=9C9mtubh984   # GTA 6: Major Character Comeback (HEAVY SPOILER)
+sirloin_x_CCge_nb5L6s      https://www.youtube.com/watch?v=CCge_nb5L6s   # INTENSE 5 Star Gameplay in GTA 6 (4K)
+sirloin_x_CrCt8sIYw2c      https://www.youtube.com/watch?v=CrCt8sIYw2c   # I Found Bigfoot in GTA 6 (San Andreas Easter Egg)
+sirloin_x_D4Zse3cVwyA      https://www.youtube.com/watch?v=D4Zse3cVwyA   # GTA 6: Lucia's Prison Release Scene (4K)
+sirloin_x_EFqwm8tcU8s      https://www.youtube.com/watch?v=EFqwm8tcU8s   # GTA 6: Full Chapter 4 Ending (No Commentary)
+sirloin_x_FT4VqFSIw3w      https://www.youtube.com/watch?v=FT4VqFSIw3w   # GTA 6 - All Returning Character's (From the GTA Series)
+sirloin_x_JEDx0JvPuYc      https://www.youtube.com/watch?v=JEDx0JvPuYc   # GTA 6: Jason Gets Arrested - Complete Scene
+sirloin_x_KDGdXxuhH1s      https://www.youtube.com/watch?v=KDGdXxuhH1s   # GTA 6 - Kill Arnold Vs. Let Him Go (Both Outcomes)
+sirloin_x_M0gOhcXoN00      https://www.youtube.com/watch?v=M0gOhcXoN00   # GTA 6 - Jason & Lucia Robbery Scenes (Compilation)
+sirloin_x_NwNxBNbuj6c      https://www.youtube.com/watch?v=NwNxBNbuj6c   # GTA 6 - Full Intro (Opening Cutscene) (4K)
+sirloin_x_P7TGBmsQYT4      https://www.youtube.com/watch?v=P7TGBmsQYT4   # GTA 6: Airplane Fight with Lucia (Full Scene)
+sirloin_x_Q88EFOcQVfI      https://www.youtube.com/watch?v=Q88EFOcQVfI   # GTA 6: Heavy Spoiler (View at your own risk)
+sirloin_x_QOVoHL4aGUM      https://www.youtube.com/watch?v=QOVoHL4aGUM   # GTA 6: Lucia & Jason moving to Vice City (New Apartment)
+sirloin_x_T3FuPsaiowg      https://www.youtube.com/watch?v=T3FuPsaiowg   # GTA 6 - Full Final Mission (No Commentary)
+sirloin_x_YOxDxdVD4MY      https://www.youtube.com/watch?v=YOxDxdVD4MY   # GTA 6: Lucia's Mother Cutscene (4K)
+sirloin_x_YciPU34yxzo      https://www.youtube.com/watch?v=YciPU34yxzo   # GTA 6: Hospital Escape Scene (Chapter 1 Final)
+sirloin_x_aXIMpncPmvs      https://www.youtube.com/watch?v=aXIMpncPmvs   # Jumping from the Highest possible Point in GTA 6
+sirloin_x_b6YS8kxDiZ0      https://www.youtube.com/watch?v=b6YS8kxDiZ0   # How to Destroy a House in GTA 6
+sirloin_x_bUNj7aI0U_c      https://www.youtube.com/watch?v=bUNj7aI0U_c   # GTA 6: Lucia's mother is being held hostage (Full Scene)
+sirloin_x_bbVKvEzUrtQ      https://www.youtube.com/watch?v=bbVKvEzUrtQ   # GTA 6 - DLC Teaser (Full Cutscene)
+sirloin_x_bfdKQlzQwSg      https://www.youtube.com/watch?v=bfdKQlzQwSg   # GTA 6 - This is how Lucia was Arrested (Full Story)
+sirloin_x_dSBH1-Ut5DA      https://www.youtube.com/watch?v=dSBH1-Ut5DA   # Sexyy Red in GTA 6 (Full Scene)
+sirloin_x_duNDbj6CzmM      https://www.youtube.com/watch?v=duNDbj6CzmM   # How to get into the Military Base in GTA 6 (Easy Method)
+sirloin_x_eRj_nzPBZe4      https://www.youtube.com/watch?v=eRj_nzPBZe4   # Grand Theft Auto VI (GTA 6) Story - All Cutscenes Game Movie (4K)
+sirloin_x_f__BztE_BxQ      https://www.youtube.com/watch?v=f__BztE_BxQ   # What If You come back to your Old House after finishing the Story? GTA 6
+sirloin_x_g2BM5jSw8zo      https://www.youtube.com/watch?v=g2BM5jSw8zo   # How to Find and Steal an Airplane in GTA 6 (Location)
+sirloin_x_hJBeNSatOnU      https://www.youtube.com/watch?v=hJBeNSatOnU   # GTA 6 - All Possible Cheat Codes
+sirloin_x_ibjFJNsc8Dw      https://www.youtube.com/watch?v=ibjFJNsc8Dw   # GTA 6 - Both Ending Decisions (Bad Ending)
+sirloin_x_jFY2V2AoBDo      https://www.youtube.com/watch?v=jFY2V2AoBDo   # GTA 6: New Apartment Romance Scene (Full Scene)
+sirloin_x_jvRMevMOwG0      https://www.youtube.com/watch?v=jvRMevMOwG0   # GTA 6: Major Spoiler (View at your own risk) Chapter 4
+sirloin_x_jz-mk-bqt2w      https://www.youtube.com/watch?v=jz-mk-bqt2w   # GTA 6 - Benedict Halifax Chase Gameplay (No Commentary)
+sirloin_x_kbgRqo78Atw      https://www.youtube.com/watch?v=kbgRqo78Atw   # GTA 6 Gameplay (No Commentary) - 45 Minutes of Gameplay Scenes and more (4K)
+sirloin_x_lQjD1eFFhB8      https://www.youtube.com/watch?v=lQjD1eFFhB8   # GTA 6 - 45 Minutes of New Gameplay (4K PS5Pro)
+sirloin_x_nqmpDCbz3lA      https://www.youtube.com/watch?v=nqmpDCbz3lA   # The Military Base in GTA 6 - First Look
+sirloin_x_o46Cdr9Vnq0      https://www.youtube.com/watch?v=o46Cdr9Vnq0   # What Happens When you reach the End of the Map in GTA 6?
+sirloin_x_p8tkw8e2mqs      https://www.youtube.com/watch?v=p8tkw8e2mqs   # GTA 6: Full Luxury Yacht Party Scene (4K)
+sirloin_x_rFyCmeupGMw      https://www.youtube.com/watch?v=rFyCmeupGMw   # What Happens When you get 6 Stars in GTA 6?
+sirloin_x_rfezlOu_-cc      https://www.youtube.com/watch?v=rfezlOu_-cc   # GTA 6 - Full Ending Cutscene (Bonnie and Clyde)
+sirloin_x_sv11vh6Nni4      https://www.youtube.com/watch?v=sv11vh6Nni4   # What Happens When you Kill Your Partner in GTA 6?
+sirloin_x_tN7bgk2lsvg      https://www.youtube.com/watch?v=tN7bgk2lsvg   # GTA 6: Full Military Base Heist (No Commentary)
+sirloin_x_tjsaPEowfIA      https://www.youtube.com/watch?v=tjsaPEowfIA   # GTA 6 - All Chapter Endings (4K)
+sirloin_x_tsnbeQ4G7lk      https://www.youtube.com/watch?v=tsnbeQ4G7lk   # GTA 6 - Jimmy De Santa Cutscenes (Michael De Santa's Son)
+sirloin_x_uHd3pRyQNbM      https://www.youtube.com/watch?v=uHd3pRyQNbM   # GTA 6: Lucia's House burns down (Full Scene)
+sirloin_x_wHarGp__tQQ      https://www.youtube.com/watch?v=wHarGp__tQQ   # GTA 6 - Rescue the Bachelor vs. Let him Die (Both Outcomes)
+sirloin_x_y7H4rhErWNI      https://www.youtube.com/watch?v=y7H4rhErWNI   # GTA 6 - All Niko Bellic Cutscenes (4K)

@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# ผลลัพธ์จากการ build (ZIP แจกเพื่อนให้อัปโหลดใน GitHub Releases แทน)
+build/
+dist/
+*.spec
+
+# ไฟล์ส่วนตัวของเครื่องนี้ (การตั้งค่า, คีย์, log, ประโยคตกหล่น)
+data/settings.json
+data/app.log
+data/missed.tsv
+data/missing_lines.txt
+data/corpus_version.json
+data/*.bak
+data/.update_tmp/
+data/claude_batch*.json
+
+# สำรอง/ไฟล์ทดลองระหว่างพัฒนา
+data/_dev_archive/
+scratch_*.txt
+
+# ทางลัด Windows (ผูกกับตำแหน่งโฟลเดอร์ของแต่ละเครื่อง สร้างใหม่ได้ด้วย scripts/make_shortcut.py)
+*.lnk

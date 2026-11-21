@@ -1,0 +1,48 @@
+{
+  "_comment": "names: ชื่อเฉพาะที่ถูกต้อง -> คำแปลไทยที่ต้องใช้เสมอ | asr_fixes: คำที่ auto-caption ถอดเสียงผิด -> คำที่ถูก (ใช้ทั้งตอนคลีนและตอนส่ง AI)",
+  "names": {
+    "Jason": "เจสัน",
+    "Jay": "เจ",
+    "Brian": "ไบรอัน",
+    "Donnie": "ดอนนี่",
+    "Lucia": "ลูเซีย",
+    "Cal": "แคล",
+    "Boobie": "บูบี้",
+    "Dre'Quan": "เดรควาน",
+    "Raul": "ราอูล",
+    "Leonida": "ลีโอนิดา",
+    "Vice City": "ไวซ์ซิตี้",
+    "VC": "ไวซ์ซิตี้",
+    "Port Gellhorn": "พอร์ตเกลฮอร์น",
+    "Ambrosia": "แอมโบรเซีย",
+    "Grassrivers": "กราสริเวอร์ส",
+    "Leonida Keys": "ลีโอนิดาคีย์ส",
+    "Keys": "หมู่เกาะคีย์ส",
+    "Kingfishers": "แก๊งคิงฟิชเชอร์",
+    "BuckMe": "แอป BuckMe",
+    "Rusty Anchor": "บาร์ Rusty Anchor",
+    "PO / parole officer": "เจ้าหน้าที่คุมประพฤติ",
+    "ankle monitor": "กำไล EM"
+  },
+  "slang": {
+    "cop / five-o / pig": "ตำรวจ / ไอ้พวกหนวด / หมาต๋า",
+    "piece / strap": "ปืน / ของ",
+    "plug": "เอเย่นต์ / คนส่งของ",
+    "brick / work / product": "ยา / ของ",
+    "fed": "สายตำรวจ / พวกปราบปราม",
+    "ghosted": "หายหัว / เท / เงียบหาย",
+    "skimming": "ยักยอก / แอบจิ๊กของ"
+  },
+  "asr_fixes": {
+    "luchia": "Lucia",
+    "lucha": "Lucia",
+    "booby": "Boobie",
+    "lucy uh": "Lucia",
+    "leonita": "Leonida",
+    "leoneda": "Leonida",
+    "vice city's": "Vice City's",
+    "dracoon": "Dre'Quan",
+    "dracon": "Dre'Quan",
+    "donniey": "Donnie"
+  }
+}
