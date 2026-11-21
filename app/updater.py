@@ -124,17 +124,28 @@ def _check_db(path):
 
 
 def _carry_live_rows(old_db, new_db):
-    """ย้ายคำแปลสดที่เครื่องนี้แปลเองไว้ (source = live-*) เข้าคลังใหม่ (ถ้าคลังใหม่ยังไม่มีประโยคนั้น)"""
+    """ย้ายคำแปลของเครื่องนี้เข้าคลังใหม่:
+    - คำแปลสด (source = live-*) -> เฉพาะประโยคที่คลังใหม่ยังไม่มี
+    - คำที่ผู้ใช้แก้เอง (source = user-fix) -> ใช้ของผู้ใช้เสมอ"""
     if not old_db.exists():
         return 0
     con = sqlite3.connect(new_db)
     try:
         con.execute("ATTACH DATABASE ? AS old", (str(old_db),))
         before = con.total_changes
-        con.execute(
-            "INSERT OR IGNORE INTO translations (en_normalized, en_text, th_text, source, start_sec) "
-            "SELECT en_normalized, en_text, th_text, source, start_sec FROM old.translations "
-            "WHERE source LIKE 'live-%'")
+        cols = "en_normalized, en_text, th_text, source, start_sec"
+        con.execute(f"INSERT OR IGNORE INTO translations ({cols}) SELECT {cols} FROM old.translations "
+                    "WHERE source LIKE 'live-%'")
+        has_fixes = con.execute("SELECT 1 FROM old.sqlite_master WHERE type='table' AND name='user_fixes'").fetchone()
+        if has_fixes:
+            con.execute("CREATE TABLE IF NOT EXISTS user_fixes (en_normalized TEXT PRIMARY KEY, en_text TEXT, "
+                        "th_text TEXT, fixed_at TEXT)")
+            con.execute("INSERT OR REPLACE INTO user_fixes SELECT * FROM old.user_fixes")
+            con.execute("UPDATE translations SET th_text = (SELECT u.th_text FROM user_fixes u "
+                        "WHERE u.en_normalized = translations.en_normalized) "
+                        "WHERE en_normalized IN (SELECT en_normalized FROM user_fixes)")
+            con.execute("INSERT OR IGNORE INTO translations (en_normalized, en_text, th_text, source, start_sec) "
+                        "SELECT en_normalized, en_text, th_text, 'user-fix', NULL FROM user_fixes")
         con.commit()
         moved = con.total_changes - before
         con.execute("DETACH DATABASE old")

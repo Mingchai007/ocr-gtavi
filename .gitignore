@@ -29,3 +29,4 @@ scratch_*.txt
 
 # ทางลัด Windows (ผูกกับตำแหน่งโฟลเดอร์ของแต่ละเครื่อง สร้างใหม่ได้ด้วย scripts/make_shortcut.py)
 *.lnk
+data/corrections.tsv

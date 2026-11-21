@@ -166,6 +166,7 @@ _MISS = object()
 
 class Matcher:
     def __init__(self, db_path=DB_PATH, cutoff=83, log_missing=True):
+        self.db_path = db_path
         self.cutoff = cutoff
         self.cutoff_long = min(cutoff, 76)   # ประโยคยาว (>= 45) ยืดหยุ่นกว่า เพราะ OCR/auto-caption มักต่าง 1-2 คำ
         self.log_missing = log_missing
@@ -176,8 +177,8 @@ class Matcher:
             "SELECT en_normalized, en_text, th_text, source FROM translations ORDER BY source, rowid"
         ).fetchall()
         con.close()
-        raw = [(k or "", en or "", th or "", src) for k, en, th, src in raw]
-        rows = [r[:3] for r in raw]
+        raw = [(k or "", en or "", th or "", src or "") for k, en, th, src in raw]
+        rows = [r[:3] + (r[3],) for r in raw]
         # ประโยคที่ถูกตัดกลางทางเป็น 2 บรรทัด (บรรทัดแรกไม่จบด้วย . ? !) -> เพิ่มแบบรวมเป็นประโยคเต็มด้วย
         # เพราะในเกมซับมักขึ้นทั้งประโยคในครั้งเดียว
         have = {r[0] for r in rows}
@@ -283,6 +284,79 @@ class Matcher:
             self._extra.append(key)
             self._memo = {}
             self._qmemo = {}
+
+    # ------------------------------------------------------------ แก้คำแปล / ค้นทั้งคลัง (หน้าประวัติบทพูด)
+    def search(self, text, limit=300):
+        """บรรทัดในคลังที่มีข้อความนี้ (ไทยหรืออังกฤษ) -> [(อังกฤษ, ไทย, ที่มา)]"""
+        q = text.strip().lower()
+        if len(q) < 2:
+            return []
+        out = []
+        for r in self.rows[:self.base_count] + [self.exact[k] for k in self._extra]:
+            if r[2] and (q in r[2].lower() or q in r[1].lower()):
+                out.append((r[1], r[2], r[3] if len(r) > 3 and isinstance(r[3], str) else ""))
+                if len(out) >= limit:
+                    break
+        return out
+
+    @staticmethod
+    def _save_quick(en, th):
+        try:
+            data = json.loads(QUICK_PATH.read_text(encoding="utf-8"))
+            data.setdefault("phrases", {})[en] = th
+            tmp = QUICK_PATH.with_suffix(".json.tmp")
+            tmp.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+            tmp.replace(QUICK_PATH)
+        except (OSError, ValueError):
+            pass
+
+    def correct(self, en_text, th):
+        """แก้คำแปลของประโยคนี้ (บันทึกลงคลังถาวร + มีผลทันที) -> คีย์ที่แก้"""
+        th = " ".join(th.split())
+        key = normalize(en_text)
+        if len(key) < 2 or not th:
+            raise ValueError("ประโยคสั้นเกินไป หรือคำแปลว่าง")
+        con = sqlite3.connect(self.db_path, timeout=10)
+        try:
+            cols = {c[1] for c in con.execute("PRAGMA table_info(translations)")}
+            old = con.execute("SELECT th_text FROM translations WHERE en_normalized=?", (key,)).fetchone()
+            if old:
+                backup = ", th_raw=COALESCE(th_raw, ?)" if "th_raw" in cols else ""
+                args = (th, old[0], key) if backup else (th, key)
+                con.execute(f"UPDATE translations SET th_text=?{backup}, "
+                            "source=CASE WHEN source LIKE 'live-%' THEN 'user-fix' ELSE source END "
+                            "WHERE en_normalized=?", args)
+            else:
+                con.execute("INSERT INTO translations (en_normalized, en_text, th_text, source, start_sec) "
+                            "VALUES (?,?,?,'user-fix',NULL)", (key, en_text.strip(), th))
+            # จดไว้แยก -> ตอนอัปเดตคลังอัตโนมัติจะนำคำที่แก้เองกลับมาใส่คลังใหม่ (ดู app/updater.py)
+            con.execute("CREATE TABLE IF NOT EXISTS user_fixes (en_normalized TEXT PRIMARY KEY, en_text TEXT, "
+                        "th_text TEXT, fixed_at TEXT)")
+            con.execute("INSERT OR REPLACE INTO user_fixes VALUES (?,?,?,datetime('now','localtime'))",
+                        (key, en_text.strip(), th))
+            con.commit()
+        finally:
+            con.close()
+        with self._lock:
+            raw = normalize_raw(en_text)
+            if raw in self.quick:                    # คำอุทาน/ด่าที่ค้นเจอก่อนคลัง -> แก้ตรงนั้นด้วย (ทั้งในไฟล์)
+                self.quick[raw] = {**self.quick[raw], "th": th}
+                self._save_quick(self.quick[raw]["en"], th)
+            row = self.exact.get(key)
+            if row is None:
+                pass
+            else:
+                new = (key, row[1], th) + ((row[3],) if len(row) > 3 and isinstance(row[3], str) else ())
+                for i, r in enumerate(self.rows):
+                    if r is row:
+                        self.rows[i] = new
+                        break
+                self.exact[key] = new
+            self._memo = {}
+            self._qmemo = {}
+        if row is None:
+            self.add(key, en_text.strip(), th)
+        return key
 
     # ------------------------------------------------------------ ลายเซ็นของคำค้น
     def _qsig1(self, cs):

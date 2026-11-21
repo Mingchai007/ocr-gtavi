@@ -14,7 +14,7 @@ from rapidfuzz import fuzz, process
 
 from PyQt6.QtCore import QObject, QThread, Qt, QTimer, pyqtSignal
 from PyQt6.QtGui import QAction
-from PyQt6.QtWidgets import QMenu, QSystemTrayIcon
+from PyQt6.QtWidgets import QMenu, QMessageBox, QSystemTrayIcon
 
 from app import settings as cfg
 from app import theme as T
@@ -276,7 +276,8 @@ class App(QObject):
         self.overlay = SubtitleOverlay({**self.s, "obs_mode": False})
         self.obs = None
         self._sync_obs()
-        self.history = HistoryWindow()
+        self.history = HistoryWindow(search_fn=lambda q: self.tr.matcher.search(q))
+        self.history.correction.connect(self.apply_correction)
         self.settings_dlg = None
         self.current_text = ""
         self.shown = None                # บทพูดที่ซับไทยบนจอแสดงอยู่ (ผลของ compose_turns)
@@ -564,7 +565,8 @@ class App(QObject):
             parts = [(p["speaker"], p["th"]) for p in shown_th]
             self.overlay.set_parts(parts, flat(text), new_line=verdict == "new")
             if not any(p["partial"] for p in turns):
-                self.history.add("\n".join(f"{s}: {t}" if s else t for s, t in parts), flat(text))
+                for p in shown_th:                           # เก็บทีละคนพูด -> แก้คำแปลทีละประโยคได้
+                    self.history.add(f"{p['speaker']}: {p['th']}" if p["speaker"] else p["th"], p["body"], p["th"])
 
     def _subtitle_gone(self):
         """ซับอังกฤษหายจากจอจริงแล้ว"""
@@ -586,6 +588,33 @@ class App(QObject):
         if self.current_text and en in flat(self.current_text):
             turns = self.composer.compose_turns(self.current_text, live=False, show_miss=self.s["show_untranslated"])
             self._show(turns, self.current_text, None, live=True)
+
+    CORRECTIONS = ROOT / "data" / "corrections.tsv"
+
+    def apply_correction(self, en, old, new):
+        """ผู้ใช้แก้คำแปลจากหน้าประวัติ -> บันทึกลงคลัง, แก้ซับบนจอ, จดไว้, ส่งให้ผู้ทำคลัง (ถ้าเปิดไว้)"""
+        try:
+            with self.tr.lock:
+                self.tr.matcher.correct(en, new)
+        except Exception as e:
+            log(f"[fix] แก้ไม่สำเร็จ: {type(e).__name__}: {e}")
+            QMessageBox.warning(self.history, "แก้คำแปลไม่สำเร็จ", str(e))
+            return
+        log(f"[fix] {en!r}: {old!r} -> {new!r}")
+        try:
+            with open(self.CORRECTIONS, "a", encoding="utf-8") as f:
+                f.write(f"{time.strftime('%Y-%m-%d %H:%M')}\t{flat(en)}\t{old}\t{new}\n")
+        except OSError:
+            pass
+        self.reporter.add(f"[แก้คำแปล] {flat(en)}  =>  {new}  (เดิม: {old})")
+        cur = self.overlay.current
+        if cur and any(t == old for _, t in cur.get("parts") or []):
+            parts = [(s, new if t == old else t) for s, t in cur["parts"]]
+            self.overlay.set_parts(parts, cur["en"], new_line=False)
+        if self.shown:
+            for p in self.shown:
+                if p["th"] == old:
+                    p["th"] = new
 
     def record_miss(self, text):
         """เก็บประโยคที่แปลไม่ได้ไว้ (data/missed.tsv) เอาไปแปลเพิ่มเข้าคลังทีหลัง"""

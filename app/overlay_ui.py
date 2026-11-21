@@ -7,7 +7,7 @@ from PyQt6.QtCore import QEvent, QRect, QRectF, QSize, Qt, QTimer, QUrl, pyqtSig
 from PyQt6.QtGui import (QColor, QDesktopServices, QFont, QFontMetricsF, QGuiApplication, QLinearGradient, QPainter,
                          QPainterPath, QPen, QRadialGradient)
 from PyQt6.QtWidgets import (QApplication, QDialog, QFontComboBox, QFormLayout, QHBoxLayout, QLabel, QLineEdit,
-                             QListWidget, QListWidgetItem, QMessageBox, QSlider, QSpinBox, QStackedWidget, QStyle,
+                             QListWidget, QListWidgetItem, QMenu, QMessageBox, QSlider, QSpinBox, QStackedWidget, QStyle,
                              QStyledItemDelegate, QVBoxLayout, QWidget)
 
 from app import settings as cfg
@@ -875,31 +875,92 @@ class _HistoryDelegate(QStyledItemDelegate):
         p.restore()
 
 
+class FixDialog(QDialog):
+    """แก้คำแปลของประโยคเดียว"""
+
+    def __init__(self, en, th, parent=None):
+        super().__init__(parent)
+        self.setObjectName("Root")
+        self.setWindowTitle("แก้คำแปล")
+        self.setMinimumWidth(560)
+        lay = QVBoxLayout(self)
+        lay.setContentsMargins(16, 16, 16, 14)
+        lay.setSpacing(10)
+        t = QLabel("ภาษาอังกฤษ")
+        t.setObjectName("Section")
+        lay.addWidget(t)
+        en_lbl = QLabel(en)
+        en_lbl.setWordWrap(True)
+        en_lbl.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        en_lbl.setObjectName("RowTitle")
+        lay.addWidget(en_lbl)
+        t = QLabel("คำแปลไทย")
+        t.setObjectName("Section")
+        lay.addWidget(t)
+        self.edit = QLineEdit(th)
+        self.edit.setMinimumHeight(34)
+        self.edit.selectAll()
+        lay.addWidget(self.edit)
+        note = QLabel("บันทึกลงคลังในเครื่องนี้และมีผลทันที — ถ้าคุณเป็นคนปล่อยคลัง รอบหน้าเพื่อนจะได้คำแปลนี้ด้วย")
+        note.setObjectName("Muted")
+        note.setWordWrap(True)
+        lay.addWidget(note)
+        row = QHBoxLayout()
+        row.addStretch(1)
+        cancel = button("ยกเลิก")
+        cancel.clicked.connect(self.reject)
+        save = button("บันทึก", kind="Primary")
+        save.setDefault(True)
+        save.clicked.connect(self._save)
+        row.addWidget(cancel)
+        row.addWidget(save)
+        lay.addLayout(row)
+        self.edit.returnPressed.connect(self._save)
+
+    def showEvent(self, e):
+        super().showEvent(e)
+        T.dark_titlebar(self)
+        self.edit.setFocus()
+
+    def _save(self):
+        if self.edit.text().strip():
+            self.accept()
+
+    def value(self):
+        return " ".join(self.edit.text().split())
+
+
 class HistoryWindow(QDialog):
     MAX = 500
+    correction = pyqtSignal(str, str, str)      # (อังกฤษ, คำแปลเดิม, คำแปลใหม่)
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, search_fn=None):
         super().__init__(parent)
         self.setObjectName("Root")
         self.setWindowTitle("ประวัติบทพูด — ซับไทย GTA VI")
         self.setWindowIcon(T.app_icon())
-        self.resize(720, 520)
-        self._items = []                     # [(ไทย, อังกฤษ, เวลา)]
+        self.resize(720, 560)
+        self._items = []                     # [(ไทยที่แสดง, อังกฤษ, เวลา, ไทยล้วน)]
+        self.search_fn = search_fn           # ค้นทั้งคลัง: ข้อความ -> [(อังกฤษ, ไทย, ที่มา)]
+        self.mode = 0                        # 0 = ประวัติ, 1 = ค้นทั้งคลัง
 
+        self.tabs = Segmented(["ประวัติบทพูด", "ค้นทั้งคลัง (แก้คำแปล)"], 0, [T.Glyph.HISTORY, T.Glyph.SEARCH])
+        self.tabs.changed.connect(self._set_mode)
         top = QHBoxLayout()
         top.setSpacing(8)
         self.search = QLineEdit()
         self.search.setPlaceholderText("ค้นหาบทพูด (ไทยหรืออังกฤษ)")
         self.search.setClearButtonEnabled(True)
         self.search.addAction(T.glyph_icon(T.Glyph.SEARCH, T.MUTED), QLineEdit.ActionPosition.LeadingPosition)
-        self.search.textChanged.connect(self._filter)
+        self.search_timer = QTimer(self, singleShot=True, interval=250, timeout=lambda: self._filter(self.search.text()))
+        self.search.textChanged.connect(lambda _: self.search_timer.start())
         self.count = QLabel()
         self.count.setObjectName("Muted")
-        btn_clear = button(" ล้างประวัติ", T.Glyph.DELETE)
-        btn_clear.clicked.connect(self._clear)
+        self.btn_clear = button(" ล้างประวัติ", T.Glyph.DELETE)
+        self.btn_clear.clicked.connect(self._clear)
         top.addWidget(self.search, 1)
         top.addWidget(self.count)
-        top.addWidget(btn_clear)
+        top.addWidget(self.btn_clear)
 
         self.list = QListWidget()
         self.list.setItemDelegate(_HistoryDelegate(self.list))
@@ -908,7 +969,9 @@ class HistoryWindow(QDialog):
         self.list.setMouseTracking(True)
         self.list.setUniformItemSizes(False)
         self.list.setResizeMode(QListWidget.ResizeMode.Adjust)
-        self.list.itemDoubleClicked.connect(self._copy)
+        self.list.itemDoubleClicked.connect(self._fix)
+        self.list.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.list.customContextMenuRequested.connect(self._menu)
         self.empty = QLabel("ยังไม่มีบทพูด\nเปิดเกมหรือคลิปที่มีซับอังกฤษ ประโยคที่แปลแล้วจะมาอยู่ที่นี่")
         self.empty.setObjectName("Muted")
         self.empty.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -916,10 +979,11 @@ class HistoryWindow(QDialog):
         lay = QVBoxLayout(self)
         lay.setContentsMargins(16, 16, 12, 12)
         lay.setSpacing(10)
+        lay.addWidget(self.tabs)
         lay.addLayout(top)
         lay.addWidget(self.empty, 1)
         lay.addWidget(self.list, 1)
-        tip = QLabel("ดับเบิลคลิกที่บทพูดเพื่อคัดลอก")
+        tip = QLabel("ดับเบิลคลิกเพื่อแก้คำแปล · คลิกขวาเพื่อคัดลอก")
         tip.setObjectName("Faint")
         lay.addWidget(tip)
         self._sync()
@@ -939,29 +1003,47 @@ class HistoryWindow(QDialog):
         super().resizeEvent(e)
         self.list.doItemsLayout()
 
-    def _row(self, th, en, when):
+    def _row(self, th, en, when, raw=None):
         it = QListWidgetItem()
         it.setData(Qt.ItemDataRole.UserRole, th)
         it.setData(Qt.ItemDataRole.UserRole + 1, en)
         it.setData(Qt.ItemDataRole.UserRole + 2, when)
+        it.setData(Qt.ItemDataRole.UserRole + 3, raw if raw is not None else th)
         self.list.addItem(it)
 
     def _sync(self):
         n = self.list.count()
         self.empty.setVisible(n == 0)
         self.list.setVisible(n > 0)
+        if self.mode == 1:
+            q = self.search.text().strip()
+            self.empty.setText("พิมพ์คำไทยหรืออังกฤษที่อยากหา (อย่างน้อย 2 ตัวอักษร)\nเช่น  เหี้ยนั่น  หรือ  baby" if len(q) < 2
+                               else "ไม่เจอในคลัง")
+            self.count.setText(f"{n:,} บรรทัด" + (" (แสดง 300 แรก)" if n >= 300 else ""))
+            return
+        self.empty.setText("ยังไม่มีบทพูด\nเปิดเกมหรือคลิปที่มีซับอังกฤษ ประโยคที่แปลแล้วจะมาอยู่ที่นี่")
         total = len(self._items)
         self.count.setText(f"{n:,} / {total:,} ประโยค" if n != total else f"{total:,} ประโยค")
 
-    def add(self, th, en):
+    def _set_mode(self, i):
+        self.mode = i
+        self.btn_clear.setVisible(i == 0)
+        self.search.setPlaceholderText("ค้นหาบทพูด (ไทยหรืออังกฤษ)" if i == 0 else "ค้นทั้งคลัง เช่น เหี้ยนั่น หรือ baby")
+        self._filter(self.search.text())
+        self.search.setFocus()
+
+    def add(self, th, en, raw=None):
+        """th = ข้อความที่แสดง (อาจมีชื่อคนพูด), en = อังกฤษ, raw = คำแปลไทยล้วน (ใช้ตอนแก้)"""
         when = time.strftime("%H:%M:%S")
-        self._items.append((th, en, when))
+        self._items.append((th, en, when, raw if raw is not None else th))
         if len(self._items) > self.MAX:
             self._items.pop(0)
+        if self.mode == 1:
+            return
         q = self.search.text().strip().lower()
         if not q or q in f"{th}\n{en}".lower():
             at_end = self.list.verticalScrollBar().value() >= self.list.verticalScrollBar().maximum() - 4
-            self._row(th, en, when)
+            self._row(th, en, when, raw)
             if self.list.count() > self.MAX:
                 self.list.takeItem(0)
             if at_end:
@@ -971,11 +1053,46 @@ class HistoryWindow(QDialog):
     def _filter(self, q):
         q = q.strip().lower()
         self.list.clear()
-        for th, en, when in self._items:
+        if self.mode == 1:
+            if len(q) >= 2 and self.search_fn:
+                for en, th, src in self.search_fn(q):
+                    self._row(th, en, src or "")
+            self.list.scrollToTop()
+            self._sync()
+            return
+        for th, en, when, raw in self._items:
             if not q or q in f"{th}\n{en}".lower():
-                self._row(th, en, when)
+                self._row(th, en, when, raw)
         self.list.scrollToBottom()
         self._sync()
+
+    def _menu(self, pos):
+        item = self.list.itemAt(pos)
+        if not item:
+            return
+        menu = QMenu(self)
+        menu.addAction(T.glyph_icon(T.Glyph.PALETTE, T.MUTED), "แก้คำแปล", lambda: self._fix(item))
+        menu.addAction(T.glyph_icon(T.Glyph.COPY, T.MUTED), "คัดลอก", lambda: self._copy(item))
+        menu.exec(self.list.viewport().mapToGlobal(pos))
+
+    def _fix(self, item):
+        en = item.data(Qt.ItemDataRole.UserRole + 1)
+        old = item.data(Qt.ItemDataRole.UserRole + 3)
+        dlg = FixDialog(en, old, self)
+        if dlg.exec() != QDialog.DialogCode.Accepted:
+            return
+        new = dlg.value()
+        if not new or new == old:
+            return
+        self.correction.emit(en, old, new)
+        shown = item.data(Qt.ItemDataRole.UserRole)
+        item.setData(Qt.ItemDataRole.UserRole, shown.replace(old, new) if old and old in shown else new)
+        item.setData(Qt.ItemDataRole.UserRole + 3, new)
+        self._items = [(t.replace(old, new) if (e == en and r == old) else t, e, w, new if (e == en and r == old) else r)
+                       for t, e, w, r in self._items]
+        self.list.doItemsLayout()
+        self.count.setText("บันทึกคำแปลแล้ว")
+        QTimer.singleShot(1500, self._sync)
 
     def _copy(self, item):
         QApplication.clipboard().setText(f"{item.data(Qt.ItemDataRole.UserRole)}\n{item.data(Qt.ItemDataRole.UserRole + 1)}")
