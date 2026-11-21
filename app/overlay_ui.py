@@ -472,6 +472,7 @@ class SubtitlePreview(QWidget):
 class SettingsDialog(QDialog):
     changed = pyqtSignal(dict)
     update_req = pyqtSignal()                   # ผู้ใช้กด "เช็กอัปเดตตอนนี้"
+    restart_req = pyqtSignal()                  # ผู้ใช้กด "รีสตาร์ทเพื่อใช้รุ่นใหม่"
     WEIGHTS = [("ปกติ", 400), ("กลาง", 600), ("หนา", 700), ("หนามาก", 900)]
     FPS = [("ประหยัดเครื่อง", 15), ("ปกติ", 30), ("ไวที่สุด", 60)]
 
@@ -484,6 +485,7 @@ class SettingsDialog(QDialog):
         self.s = dict(s)
         self.live_status = live_status          # ฟังก์ชันคืน (ข้อความสถานะตัวแปลสด, พร้อมใช้ไหม)
         self._update_status = ("", True)
+        self._restart = False
         self.can_report = can_report            # มีปลายทางรับประโยคตกหล่น (data/report_target.json) ไหม
 
         lay = QVBoxLayout(self)
@@ -646,19 +648,19 @@ class SettingsDialog(QDialog):
         note.setWordWrap(True)
         lay.addWidget(note)
         lay.addWidget(hline())
-        lay.addWidget(self._option("auto_update", "อัปเดตคลังคำแปลอัตโนมัติ",
-                                   "เช็กตอนเปิดโปรแกรม โหลดเฉพาะคลังใหม่ (~4 MB) ไม่ต้องโหลดโปรแกรมใหม่ทั้งก้อน"))
+        lay.addWidget(self._option("auto_update", "อัปเดตอัตโนมัติ",
+                                   "เช็กตอนเปิดโปรแกรม โหลดเฉพาะคลังคำแปลใหม่ (~4 MB) และโค้ดโปรแกรมรุ่นใหม่ (<1 MB)"))
         row = QHBoxLayout()
         row.setSpacing(8)
         self.update_lbl = QLabel()
         self.update_lbl.setObjectName("Muted")
         self.update_lbl.setWordWrap(True)
         self.update_btn = button(" เช็กตอนนี้", T.Glyph.RESET)
-        self.update_btn.clicked.connect(self._ask_update)
+        self.update_btn.clicked.connect(lambda: self.restart_req.emit() if self._restart else self._ask_update())
         row.addWidget(self.update_lbl, 1)
         row.addWidget(self.update_btn)
         lay.addLayout(row)
-        self.set_update_status(*self._update_status)
+        self.set_update_status(*self._update_status, restart=self._restart)
         if self.can_report:
             lay.addWidget(hline())
             lay.addWidget(self._option("report_missed", "ส่งประโยคที่ยังไม่มีคำแปลให้ผู้ทำคลัง",
@@ -697,9 +699,11 @@ class SettingsDialog(QDialog):
         self.set_update_status("กำลังเช็ก…", True)
         self.update_req.emit()
 
-    def set_update_status(self, text, ok=True, busy=False):
+    def set_update_status(self, text, ok=True, busy=False, restart=False):
         self._update_status = (text, ok)
+        self._restart = restart
         try:
+            self.update_btn.setText(" รีสตาร์ท" if restart else " เช็กตอนนี้")
             self.update_lbl.setText(text)
             self.update_lbl.setStyleSheet("" if ok else f"color:{T.WARN};")
             self.update_btn.setEnabled(not busy)

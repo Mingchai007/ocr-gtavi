@@ -317,7 +317,9 @@ class App(QObject):
         self.reporter = Reporter(enabled=self.s["report_missed"], corpus_version=updater.local_version())
         self.update_done.connect(self._on_update_done)
         self._updating = False
+        self._restart_ready = False
         self._update_status = (self._corpus_label(), True)
+        self.tray.messageClicked.connect(lambda: self._restart_ready and self.restart())
         if self.s["auto_update"]:
             QTimer.singleShot(3000, lambda: self.check_update(manual=False))     # รอโปรแกรมเปิดเสร็จก่อน
 
@@ -367,26 +369,32 @@ class App(QObject):
     def _set_update_status(self, text, ok=True, busy=False):
         self._update_status = (text, ok)
         if self.settings_dlg is not None and self.settings_dlg.isVisible():
-            self.settings_dlg.set_update_status(text, ok, busy)
+            self.settings_dlg.set_update_status(text, ok, busy, restart=self._restart_ready)
 
     def check_update(self, manual=True):
         if self._updating:
             return
         self._updating = True
-        self._set_update_status("กำลังเช็กคลังใหม่…", True, busy=True)
+        self._set_update_status("กำลังเช็กอัปเดต…", True, busy=True)
 
         def work():
             from app import updater
             from app.matcher import Matcher
+            res = {"updated": False, "code": None, "code_error": None, "corpus_error": None}
             try:
-                res = updater.check_and_update()
+                res.update(updater.check_and_update())
                 if res["updated"]:
                     res["matcher"] = Matcher(log_missing=False)      # สร้างดัชนีใหม่เบื้องหลัง (~0.5 วิ)
-                self.update_done.emit(res, None)
             except Exception as e:                                   # เน็ตหลุด/GitHub ล่ม -> ใช้คลังเดิมต่อ
-                msg = str(e) if isinstance(e, updater.UpdateError) else f"{type(e).__name__}: {e}"
-                log(f"[update] {msg}")
-                self.update_done.emit(None, msg)
+                res["corpus_error"] = str(e) if isinstance(e, updater.UpdateError) else f"{type(e).__name__}: {e}"
+                log(f"[update] {res['corpus_error']}")
+            if updater.code_updates_supported():                     # เช็กตัวโปรแกรมแยกกัน (คลังพังก็ยังอัปเดตโปรแกรมได้)
+                try:
+                    res["code"] = updater.check_code_update()
+                except Exception as e:
+                    res["code_error"] = str(e) if isinstance(e, updater.UpdateError) else type(e).__name__
+                    log(f"[update] โปรแกรม: {res['code_error']}")
+            self.update_done.emit(res, None)
         self._update_manual = manual
         threading.Thread(target=work, daemon=True).start()
 
@@ -396,21 +404,51 @@ class App(QObject):
         if err:
             self._set_update_status(f"{err} — ใช้คลังเดิมต่อ", ok=False)
             return
-        if not res["updated"]:
-            self._set_update_status(f"{self._corpus_label()} — ล่าสุดแล้ว", True)
+        msgs = []
+        if res["updated"]:
+            old = self.tr.matcher.base_count
+            with self.tr.lock:
+                self.tr.matcher = res["matcher"]                    # สลับคลังทันที ไม่ต้องปิดโปรแกรม
+            new = self.tr.matcher.base_count
+            self.panel.set_total_lines(new)
+            msg = f"อัปเดตคลังแล้ว ({updater.version_label(res['version'])})"
+            if new - old > 0:
+                msg += f" +{new - old:,} ประโยค"
+            log(f"[update] {msg}, เก็บคำแปลของเครื่องนี้ไว้ {res['live_kept']} ประโยค")
+            msgs.append(msg + (f" — {res['notes']}" if res.get("notes") else ""))
+        code = res.get("code")
+        if code and code["need_exe"]:
+            msgs.append("มีโปรแกรมรุ่นใหม่ที่ต้องโหลด ZIP ตัวเต็ม — ขอไฟล์ใหม่จากคนแจก")
+        elif code and code["downloaded"] or updater.pending_code_version():
+            self._restart_ready = True
+            ver = updater.version_label(code["version"] if code and code["downloaded"] else updater.pending_code_version())
+            msgs.append(f"โปรแกรมรุ่นใหม่ ({ver}) พร้อมแล้ว — คลิกที่นี่เพื่อรีสตาร์ท"
+                        + (f"\n{code['notes']}" if code and code.get("notes") else ""))
+            log(f"[update] โหลดโปรแกรมรุ่น {ver} แล้ว ใช้ตอนเปิดครั้งหน้า")
+        if not msgs:
+            if res.get("corpus_error"):
+                status = f"{res['corpus_error']} — ใช้คลังเดิมต่อ"
+            else:
+                status = f"{self._corpus_label()} — ล่าสุดแล้ว"
+            if res.get("code_error"):
+                status += f" (โปรแกรม: {res['code_error']})"
+            self._set_update_status(status, not (res.get("code_error") or res.get("corpus_error")))
             return
-        old = self.tr.matcher.base_count
-        with self.tr.lock:
-            self.tr.matcher = res["matcher"]                        # สลับคลังทันที ไม่ต้องปิดโปรแกรม
-        new = self.tr.matcher.base_count
-        self.panel.set_total_lines(new)
-        diff = new - old
-        msg = f"อัปเดตคลังแล้ว ({updater.version_label(res['version'])})"
-        if diff > 0:
-            msg += f" +{diff:,} ประโยค"
-        log(f"[update] {msg}, เก็บคำแปลสดของเครื่องนี้ไว้ {res['live_kept']} ประโยค")
-        self._set_update_status(msg, True)
-        self.tray.showMessage("ซับไทย GTA VI", msg + (f"\n{res['notes']}" if res["notes"] else ""), T.app_icon(), 4000)
+        self._set_update_status(msgs[-1].split("\n")[0], True)
+        self.tray.showMessage("ซับไทย GTA VI", "\n".join(msgs), T.app_icon(), 6000)
+
+    def restart(self):
+        """ปิดแล้วเปิดโปรแกรมใหม่ (ใช้โค้ดรุ่นที่เพิ่งโหลดมา)"""
+        import sys
+        from PyQt6.QtCore import QProcess
+        from app import main as M
+        log("[update] รีสตาร์ทเพื่อใช้โปรแกรมรุ่นใหม่")
+        M.release_instance()
+        if getattr(sys, "frozen", False):
+            QProcess.startDetached(sys.executable, ["--restarted"])
+        else:
+            QProcess.startDetached(sys.executable, ["-m", "app.main", "--restarted"])
+        self.quit()
 
     def show_panel(self):
         self.panel.show()
@@ -753,8 +791,9 @@ class App(QObject):
     def open_settings(self):
         if self.settings_dlg is None or not self.settings_dlg.isVisible():
             self.settings_dlg = SettingsDialog(self.s, live_status=self.tr.status, can_report=self.reporter.available)
-            self.settings_dlg.set_update_status(*self._update_status, busy=self._updating)
+            self.settings_dlg.set_update_status(*self._update_status, busy=self._updating, restart=self._restart_ready)
             self.settings_dlg.update_req.connect(lambda: self.check_update(manual=True))
+            self.settings_dlg.restart_req.connect(self.restart)
             self.settings_dlg.changed.connect(lambda s: self.apply_settings({**s, "region": self.s.get("region")}))
             self.settings_dlg.finished.connect(lambda _r: self.overlay.clear_sample())
             self.settings_dlg.show()

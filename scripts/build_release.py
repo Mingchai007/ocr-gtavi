@@ -6,6 +6,7 @@
 - ถ้าเปลี่ยนโลโก้: วางไฟล์ใหม่ทับ assets_src/logo.png แล้วรัน scripts\\make_assets.py ก่อน
 """
 import shutil
+import time
 import subprocess
 import sys
 import zipfile
@@ -107,8 +108,16 @@ def main():
         "--exclude-module", "pytest",
         str(ROOT / "run_app.py"),
     ]
-    print("Running PyInstaller...")
-    subprocess.run(cmd, cwd=ROOT, check=True)
+    # ประทับรุ่นโค้ดลงใน .exe (ระบบอัปเดตจะโหลดเฉพาะรุ่นที่ใหม่กว่านี้) แล้วคืนค่าเดิมหลัง build
+    version_py = ROOT / "app" / "version.py"
+    original = version_py.read_text(encoding="utf-8")
+    code_version = int(time.strftime("%Y%m%d%H%M"))
+    version_py.write_text(f"# สร้างโดย scripts/build_release.py\nCODE_VERSION = {code_version}\n", encoding="utf-8")
+    print(f"Running PyInstaller... (รุ่นโค้ด {code_version})")
+    try:
+        subprocess.run(cmd, cwd=ROOT, check=True)
+    finally:
+        version_py.write_text(original, encoding="utf-8")
 
     # คัดลอกไฟล์ data ที่จำเป็นเท่านั้น (ไม่รวม backup / settings ส่วนตัว / คีย์)
     data_out = OUT_DIR / "data"

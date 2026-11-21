@@ -17,8 +17,9 @@ import sys
 import traceback
 
 APP_ID = "FastCity.GTA6ThaiSub"
-MUTEX_NAME = "GTA6ThaiSubOverlay"
-SHOW_EVENT = "GTA6ThaiSubOverlay_ShowPanel"      # ตัวที่เปิดซ้ำส่งสัญญาณนี้ให้ตัวที่เปิดอยู่โชว์หน้าต่างควบคุม
+_INSTANCE = os.environ.get("GTA6THAISUB_INSTANCE", "")          # ใช้ตอนทดสอบ: เปิดตัวทดสอบคู่กับตัวจริงได้
+MUTEX_NAME = "GTA6ThaiSubOverlay" + _INSTANCE
+SHOW_EVENT = "GTA6ThaiSubOverlay_ShowPanel" + _INSTANCE         # ตัวที่เปิดซ้ำส่งสัญญาณนี้ให้ตัวที่เปิดอยู่โชว์หน้าต่างควบคุม
 PANEL_TITLE = "ซับไทย GTA VI"
 
 
@@ -56,13 +57,28 @@ def hide_own_console():
         pass
 
 
+_mutex = None
+
+
 def single_instance():
     """กันเปิดโปรแกรมซ้อน 2 ตัว (ซับขึ้นซ้อน/ปุ่มลัดชนกัน)"""
+    global _mutex
     k32 = ctypes.windll.kernel32
+    k32.CreateMutexW.restype = ctypes.c_void_p
     h = k32.CreateMutexW(None, False, MUTEX_NAME)
     if k32.GetLastError() == 183:          # ERROR_ALREADY_EXISTS
+        k32.CloseHandle(ctypes.c_void_p(h))
         return None
+    _mutex = h
     return h
+
+
+def release_instance():
+    """ตอนรีสตาร์ท: ปล่อยให้ตัวใหม่เปิดได้ทันที"""
+    global _mutex
+    if _mutex:
+        ctypes.windll.kernel32.CloseHandle(ctypes.c_void_p(_mutex))
+        _mutex = None
 
 
 def show_running_instance():
@@ -81,7 +97,11 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--debug", action="store_true", help="พิมพ์ข้อความ OCR และเวลา (เปิดจาก Terminal)")
     ap.add_argument("--select", action="store_true", help="เลือกกรอบซับใหม่ตอนเปิด")
+    ap.add_argument("--restarted", action="store_true", help=argparse.SUPPRESS)
     args = ap.parse_args()
+    if args.restarted:
+        import time
+        time.sleep(1.5)                     # รอตัวเก่าปิดให้เสร็จ (คืนปุ่มลัด/ไอคอนถาด)
     if not args.debug:
         hide_own_console()
     if sys.stdout and hasattr(sys.stdout, "reconfigure"):
@@ -127,6 +147,9 @@ def main():
         QMessageBox.critical(None, "เปิดโปรแกรมไม่ได้", f"{type(e).__name__}: {e}\n\nรายละเอียดอยู่ในไฟล์ data\\app.log")
         raise
     splash.close()
+    from app import updater
+    updater.mark_code_started()             # เปิดสำเร็จ -> ตัวโหลดไม่ต้องถอยกลับไปใช้รุ่นเดิม
+    log(f"รุ่นโปรแกรม {updater.code_version() or 'dev'} (exe {updater.exe_version() or '-'})")
     log("พร้อมแล้ว — ปุ่มลัด Ctrl+Alt+S เปิด/ปิด, Ctrl+Alt+R เลือกกรอบ, Ctrl+Alt+O ตั้งค่า, Ctrl+Alt+Q ปิด")
     code = qapp.exec()
     del app

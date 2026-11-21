@@ -204,6 +204,112 @@ def check_and_update(progress=None, force=False):
     return {"updated": True, "version": m["version"], "rows": rows, "live_kept": live_kept, "notes": m.get("notes", "")}
 
 
+# ================================================================ อัปเดตตัวโปรแกรม (โค้ด)
+# ใช้ release ชื่อตายตัว "app-channel" (ไม่ใช่ release ล่าสุด ซึ่งเป็นของคลังคำแปล) — ไฟล์ข้างในถูกแทนที่ทุกครั้งที่ปล่อยรุ่นใหม่
+APP_TAG = "app-channel"
+APP_MANIFEST = "app_manifest.json"
+UPDATE_DIR = DATA / "app_update"
+
+
+def code_version():
+    """รุ่นของโค้ดที่กำลังรันอยู่ (0 = รันจากโค้ดในเครื่อง)"""
+    try:
+        from app.version import CODE_VERSION
+        return int(CODE_VERSION)
+    except Exception:
+        return 0
+
+
+def exe_version():
+    import sys
+    return getattr(sys, "_gta6_exe_version", 0)
+
+
+def app_base_url():
+    override = os.environ.get("GTA6THAISUB_APP_URL", "").rstrip("/")         # ใช้ตอนทดสอบ
+    if override:
+        return override
+    name = repo()
+    return f"https://github.com/{name}/releases/download/{APP_TAG}" if name else ""
+
+
+def code_updates_supported():
+    """อัปเดตโค้ดได้เฉพาะตัว .exe ที่มีตัวโหลดรุ่นใหม่ (ตอนรันจากโค้ดในเครื่องไม่ต้องอัปเดต)"""
+    return exe_version() >= 2 and (code_version() > 0 or bool(os.environ.get("GTA6THAISUB_APP_URL")))
+
+
+def pending_code_version():
+    """รุ่นโค้ดที่โหลดไว้แล้ว รอใช้ตอนเปิดโปรแกรมครั้งหน้า (0 = ไม่มี)"""
+    try:
+        v = int(json.loads((UPDATE_DIR / "current.json").read_text(encoding="utf-8"))["version"])
+    except (OSError, ValueError, KeyError, TypeError):
+        return 0
+    return v if v > code_version() else 0
+
+
+def mark_code_started():
+    """เปิดโปรแกรมสำเร็จ -> บอกตัวโหลดว่ารุ่นนี้ใช้ได้ (ไม่ต้องถอยกลับ)"""
+    try:
+        (UPDATE_DIR / "starting.json").unlink()
+    except OSError:
+        pass
+
+
+def check_code_update(progress=None):
+    """เช็กและโหลดโค้ดโปรแกรมรุ่นใหม่ (มีผลเมื่อเปิดโปรแกรมใหม่)
+    คืน {"downloaded": bool, "version": int, "notes": str, "need_exe": bool}"""
+    url = app_base_url()
+    if not url:
+        raise UpdateError("ยังไม่ได้ตั้งแหล่งอัปเดต")
+    try:
+        m = json.loads(_get(f"{url}/{APP_MANIFEST}", 64 * 1024).decode("utf-8"))
+    except urllib.error.HTTPError as e:
+        if e.code == 404:
+            return {"downloaded": False, "version": code_version(), "notes": "", "need_exe": False}
+        raise UpdateError(f"เช็กอัปเดตโปรแกรมไม่ได้ (GitHub ตอบ {e.code})") from e
+    except Exception as e:
+        raise UpdateError(f"เช็กอัปเดตโปรแกรมไม่ได้ ({type(e).__name__})") from e
+    ver = int(m.get("version", 0))
+    have = max(code_version(), pending_code_version())
+    try:
+        rejected = json.loads((UPDATE_DIR / "rejected.json").read_text(encoding="utf-8")).get("version")
+    except (OSError, ValueError):
+        rejected = None
+    if ver <= have or ver == rejected:
+        return {"downloaded": False, "version": have, "notes": "", "need_exe": False}
+    if m.get("min_exe", 0) > exe_version():
+        return {"downloaded": False, "version": ver, "notes": m.get("notes", ""), "need_exe": True}
+    import zipfile
+    UPDATE_DIR.mkdir(parents=True, exist_ok=True)
+    tmp = UPDATE_DIR / ".tmp"
+    shutil.rmtree(tmp, ignore_errors=True)
+    tmp.mkdir()
+    try:
+        z = tmp / "app_code.zip"
+        _download(f"{url}/{m['name']}", z, m["sha256"], m["size"], progress)
+        dest = tmp / "unpacked"
+        with zipfile.ZipFile(z) as zf:
+            names = zf.namelist()
+            if any(n.startswith("/") or ".." in n.split("/") for n in names) or "app/main.py" not in names:
+                raise UpdateError("ไฟล์อัปเดตโปรแกรมไม่ถูกรูปแบบ")
+            zf.extractall(dest)
+        for py in (dest / "app").rglob("*.py"):                   # โค้ดต้องคอมไพล์ผ่านทุกไฟล์ก่อนใช้
+            compile(py.read_text(encoding="utf-8"), str(py), "exec")
+        folder = f"v{ver}"
+        shutil.rmtree(UPDATE_DIR / folder, ignore_errors=True)
+        os.replace(dest, UPDATE_DIR / folder)
+        (UPDATE_DIR / "current.json").write_text(json.dumps({"version": ver, "folder": folder,
+                                                             "min_exe": m.get("min_exe", 0)}), encoding="utf-8")
+        for old in UPDATE_DIR.glob("v*"):                         # เก็บแค่รุ่นที่ใช้อยู่กับรุ่นใหม่
+            if old.is_dir() and old.name not in (folder, f"v{code_version()}"):
+                shutil.rmtree(old, ignore_errors=True)
+    except SyntaxError as e:
+        raise UpdateError(f"โค้ดรุ่นใหม่เสีย ({e.filename})") from e
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+    return {"downloaded": True, "version": ver, "notes": m.get("notes", ""), "need_exe": False}
+
+
 def version_label(v):
     """เลขเวอร์ชัน (YYYYMMDDHHMM) -> ข้อความอ่านง่าย"""
     s = str(v)

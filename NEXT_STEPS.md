@@ -59,6 +59,12 @@
   - [ ] ตั้ง repo เป็น **Public** (ไม่งั้นเครื่องเพื่อนโหลดไม่ได้)
   - [ ] สร้างโทเคน GitHub (Fine-grained, เฉพาะ repo นี้, Contents = Read and write) แล้วปล่อยคลังชุดแรก
   - ทุกครั้งที่เติมคำแปล: `$env:GITHUB_TOKEN = "..."` แล้ว `.\.venv\Scripts\python.exe scripts\publish_corpus.py --notes "เพิ่มอะไร"`
+- [x] **อัปเดตตัวโปรแกรมอัตโนมัติ** (`run_app.py` ตัวโหลด + `app/updater.py` + `scripts/publish_app.py`)
+  - ส่งเฉพาะโค้ด `app/` (~300 KB) ขึ้น release ชื่อ `app-channel` — เครื่องเพื่อนโหลดเองตอนเปิด แล้วใช้รุ่นใหม่ตอนเปิดครั้งหน้า (หรือคลิกแจ้งเตือนเพื่อรีสตาร์ท)
+  - กันพัง: รุ่นใหม่ import ไม่ผ่าน หรือเปิดไม่ขึ้น 2 ครั้ง -> ถอยกลับไปรุ่นที่ติดมากับ .exe เอง และไม่โหลดรุ่นนั้นซ้ำ
+  - ถ้าโค้ดใหม่ต้องใช้ไลบรารีที่ .exe ไม่มี: เพิ่ม `EXE_VERSION` ใน `run_app.py` แล้วปล่อยด้วย `--min-exe` เลขนั้น + ส่ง ZIP ใหม่
+  - [ ] ปิดโปรแกรมตัวเก่า -> `build_release.py` -> ส่ง ZIP ใหม่ให้เพื่อน **ครั้งสุดท้าย** (ZIP เก่าไม่มีตัวโหลด)
+  - ทุกครั้งที่แก้โค้ด: `.\.venv\Scripts\python.exe scripts\publish_app.py --notes "แก้อะไร"` (เติม `--with-corpus` = ปล่อยคลังด้วย)
 - [x] **เก็บประโยคตกหล่นจากเครื่องเพื่อนอัตโนมัติ** (`app/reporter.py`) — ส่งเป็นชุดทุก 60 วิ เบื้องหลัง, กันซ้ำ, สูงสุด 300 ประโยค/วัน/เครื่อง, เพื่อนปิดได้ในตั้งค่า > ระบบ
   - [ ] วางลิงก์ Discord Webhook (ห้อง Discord > ตั้งค่าห้อง > Integrations > Webhooks > New Webhook > Copy URL)
         หรือ Google Sheet (`scripts/google_sheet_receiver.gs`) ลงใน `data/report_target.json` แล้ว build ใหม่
@@ -85,6 +91,7 @@ cls
 | โหลด + คลีนคลิปใหม่ | `.\.venv\Scripts\python.exe scripts\0_download_subs.py` แล้ว `scripts\1_clean_vtt.py` |
 | ดูรุ่น Gemini ที่ใช้ได้ | `.\.venv\Scripts\python.exe scripts\2_batch_translate.py --list-models` |
 | ปล่อยคลังใหม่ให้ทุกเครื่อง (~4 MB) | `.\.venv\Scripts\python.exe scripts\publish_corpus.py --notes "..."` (ต้องตั้ง `$env:GITHUB_TOKEN` ก่อน) |
+| ปล่อยโปรแกรมรุ่นใหม่ให้ทุกเครื่อง (~300 KB) | `.\.venv\Scripts\python.exe scripts\publish_app.py --notes "..."` (เติม `--with-corpus` = ปล่อยคลังด้วย) |
 | สร้าง .exe + ZIP แจกเพื่อน | `.\.venv\Scripts\python.exe scripts\build_release.py` |
 | สร้างทางลัดเปิดโปรแกรม (ไม่มี cmd) | `.\.venv\Scripts\python.exe scripts\make_shortcut.py` (เติม `--desktop` = วางบนเดสก์ท็อปด้วย) |
 | เปลี่ยนโลโก้/ไอคอน | วางไฟล์ทับ `assets_src\logo.png` แล้ว `.\.venv\Scripts\python.exe scripts\make_assets.py` |
