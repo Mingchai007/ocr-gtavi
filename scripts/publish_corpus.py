@@ -39,6 +39,20 @@ OUT = ROOT / "build" / "corpus_release"
 API = "https://api.github.com"
 
 
+def load_env(path=ROOT / ".env"):
+    """อ่านไฟล์ .env (บรรทัดแบบ KEY=ค่า) — ไฟล์นี้อยู่ใน .gitignore ไม่ขึ้น GitHub"""
+    out = {}
+    try:
+        for line in path.read_text(encoding="utf-8-sig").splitlines():
+            line = line.strip()
+            if line and not line.startswith("#") and "=" in line:
+                k, v = line.split("=", 1)
+                out[k.strip()] = v.strip().strip('"').strip("'")
+    except OSError:
+        pass
+    return out
+
+
 def sha256(path):
     h = hashlib.sha256()
     with open(path, "rb") as f:
@@ -129,9 +143,9 @@ def main():
           f"translations.db.gz {m['db']['size'] / 1024 / 1024:.1f} MB")
     if args.dry_run:
         return
-    token = os.environ.get("GITHUB_TOKEN", "").strip()
+    token = os.environ.get("GITHUB_TOKEN", "").strip() or load_env().get("GITHUB_TOKEN", "").strip()
     if not token:
-        raise SystemExit('ยังไม่ได้ตั้งโทเคน: $env:GITHUB_TOKEN = "โทเคนของคุณ" แล้วรันใหม่')
+        raise SystemExit("ยังไม่ได้ตั้งโทเคน: เปิดไฟล์ .env ในโฟลเดอร์โปรเจกต์ แล้ววางโทเคนต่อจาก GITHUB_TOKEN=")
     name = repo()
     if not name:
         raise SystemExit("ยังไม่ได้ตั้ง repo ใน data/update_source.json")

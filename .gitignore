@@ -8,7 +8,9 @@ build/
 dist/
 *.spec
 
-# ไฟล์ส่วนตัวของเครื่องนี้ (การตั้งค่า, คีย์, log, ประโยคตกหล่น)
+# ไฟล์ส่วนตัวของเครื่องนี้ (โทเคน, การตั้งค่า, คีย์, log, ประโยคตกหล่น)
+.env
+.env.*
 data/settings.json
 data/app.log
 data/missed.tsv
