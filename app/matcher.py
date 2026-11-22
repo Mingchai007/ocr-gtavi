@@ -182,8 +182,12 @@ class Matcher:
         # ประโยคที่ถูกตัดกลางทางเป็น 2 บรรทัด (บรรทัดแรกไม่จบด้วย . ? !) -> เพิ่มแบบรวมเป็นประโยคเต็มด้วย
         # เพราะในเกมซับมักขึ้นทั้งประโยคในครั้งเดียว
         have = {r[0] for r in rows}
+        # เฉพาะคลังที่มาจากซับคลิป (บรรทัดต่อกันตามเวลา) — แถวที่เพิ่มเอง (missed / user-fix / แปลสด)
+        # เป็นประโยคอิสระ ห้ามต่อกัน (เคยเกิด "Keep Left" + "Come on..." -> "ชิดซ้าย ไม่เอาน่า...")
         for a, b in zip(raw, raw[1:]):
             if a[3] != b[3] or a[1].rstrip().endswith((".", "?", "!", '"')):
+                continue
+            if a[3] in ("missed", "user-fix") or a[3].startswith("live"):
                 continue
             key = f"{a[0]} {b[0]}"
             if key not in have:
@@ -486,6 +490,10 @@ class Matcher:
         row = self.exact.get(q)
         if row:
             return self._hit(row, 100.0)
+        if len(q) < 5:
+            # สั้นมาก (มักเหลือจากการตัดคำหยาบ เช่น "The fuck?" -> "the") -> เดาแบบทนสะกดผิดแล้วผิดบ่อย
+            # (เคยได้ "They" -> "พวกเขา...") ใช้เฉพาะที่ตรงเป๊ะ / คลังคำอุทานเท่านั้น
+            return None
         best = self._qmemo.get(q, _MISS)
         if best is _MISS:
             cs = q.encode("ascii", "replace").translate(_TRANS)
