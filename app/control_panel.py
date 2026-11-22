@@ -319,7 +319,7 @@ class ControlPanel(QWidget):
         row.addWidget(b_quit, 1)
         lay.addLayout(row)
 
-        tip = QLabel("Ctrl+Alt+S เปิด/ปิดซับ  ·  Ctrl+Alt+E อังกฤษ  ·  Ctrl+Alt+R เลือกกรอบ\n"
+        tip = QLabel("Ctrl+Alt+S เปิด/ปิดซับ  ·  Ctrl+Alt+E อังกฤษ  ·  Ctrl+Alt+B แจ้งบัคซับ\n"
                      "ปิดหน้าต่างนี้ได้ โปรแกรมยังทำงานต่อที่ไอคอนข้างนาฬิกา")
         tip.setObjectName("Faint")
         tip.setAlignment(Qt.AlignmentFlag.AlignCenter)

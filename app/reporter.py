@@ -79,6 +79,13 @@ class Reporter:
                 return
             self.queue.append(text.strip()[:300])
 
+    def add_raw(self, text):
+        """ข้อความยาวที่ไม่ต้องกันซ้ำ (เช่น แจ้งบัค) — ส่งเป็นข้อความเดี่ยวรอบถัดไป"""
+        if self.enabled and self.url:
+            with self.lock:
+                self.queue.append(text[:1800])
+            self.wake.set()
+
     def flush(self, wait=2.0):
         """ตอนปิดโปรแกรม: ส่งที่ค้างอยู่ (รอไม่เกิน wait วินาที)"""
         if not self.thread:

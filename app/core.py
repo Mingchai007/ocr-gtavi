@@ -2,6 +2,7 @@
 
 (ไฟล์นี้โหลดไลบรารีหนักทั้งหมด จึงถูกเรียกจาก app/main.py หลังหน้าต่างโหลดขึ้นแล้ว)
 """
+import collections
 import ctypes
 import ctypes.wintypes
 import json
@@ -35,6 +36,7 @@ CLAUSE = re.compile(r"(?<=[,;—–])\s+")
 SAME_LINE = 70          # ความเหมือนของข้อความ (0-100) ที่ถือว่าเป็นซับประโยคเดิม แค่ OCR อ่านเพี้ยน
 EMPTY_GRACE_MS = 220    # ซับหายจากจอต่อเนื่องนานเท่านี้ก่อนถึงจะเริ่มซ่อน (กันซับสั้นๆ ที่ OCR อ่านพลาดเฟรมเดียว)
 CONFIRM_MS = 160        # ซับใหม่ที่ "คล้ายซับเดิม" ต้องไม่มีเฟรมซับเดิมแทรกภายในเวลานี้ ถึงจะเปลี่ยน (กัน OCR อ่านเพี้ยน)
+UNTRANSLATED_CONFIRM_MS = 600   # ข้อความที่ไม่มีคำแปลเลย ต้องค้างนานเท่านี้ถึงจะล้างซับไทยที่แสดงอยู่
 
 
 def flat(text):
@@ -234,7 +236,7 @@ class OcrWorker(QThread):
 class Hotkeys(QObject):
     pressed = pyqtSignal(str)
     KEYS = {1: ("S", "toggle"), 2: ("R", "region"), 3: ("E", "english"),
-            4: ("H", "history"), 5: ("O", "settings"), 6: ("Q", "quit")}
+            4: ("H", "history"), 5: ("O", "settings"), 6: ("Q", "quit"), 7: ("B", "bug")}
 
     def start(self):
         threading.Thread(target=self._loop, daemon=True).start()
@@ -280,6 +282,7 @@ class App(QObject):
         self.history.correction.connect(self.apply_correction)
         self.settings_dlg = None
         self.current_text = ""
+        self.trace = collections.deque(maxlen=800)   # เหตุการณ์ล่าสุด (เวลา, ชนิด, รายละเอียด) สำหรับแจ้งบัค
         self.shown = None                # บทพูดที่ซับไทยบนจอแสดงอยู่ (ผลของ compose_turns)
         self.empty_timer = QTimer(self, singleShot=True, interval=EMPTY_GRACE_MS, timeout=self._subtitle_gone)
         self._pending = None             # ซับใหม่ที่รอยืนยัน (turns, text, ms)
@@ -343,7 +346,8 @@ class App(QObject):
                  ("เปิด/ปิดซับ\tCtrl+Alt+S", T.Glyph.PLAY, self.toggle),
                  ("เลือกกรอบซับใหม่\tCtrl+Alt+R", T.Glyph.CROP, self.select_region),
                  ("ตั้งค่า\tCtrl+Alt+O", T.Glyph.SETTINGS, self.open_settings),
-                 ("ประวัติบทพูด\tCtrl+Alt+H", T.Glyph.HISTORY, self.show_history), None,
+                 ("ประวัติบทพูด\tCtrl+Alt+H", T.Glyph.HISTORY, self.show_history),
+                 ("แจ้งบัคซับ (กดทันทีที่เห็น)\tCtrl+Alt+B", T.Glyph.DOCUMENT, self.save_bug_report), None,
                  ("ปิดโปรแกรม\tCtrl+Alt+Q", T.Glyph.POWER, self.quit)]
         for item in items:
             if item is None:
@@ -482,7 +486,11 @@ class App(QObject):
         except Exception:
             log("[app] on_text:\n" + traceback.format_exc())
 
+    def _trace(self, kind, detail=""):
+        self.trace.append((time.time(), kind, detail))
+
     def _on_text(self, text, ms):
+        self._trace("ocr", f"{text!r} ({ms:.0f} ms)")
         self.current_text = text
         if not text:
             # OCR อ่านไม่เจอซับ — อาจแค่พลาดเฟรมเดียว (ฉากสว่างวาบ/ซับสั้นๆ) -> รอให้หายจริงก่อน
@@ -523,6 +531,8 @@ class App(QObject):
             return "same"            # เฟรมนี้เหลือแต่ชื่อคนพูด/เศษตัวอักษร (เช่น "Lucia9Yeah.") -> ไม่นับเป็นซับใหม่
         if not a:
             return "new"
+        if len(a) >= 8 and len(b) >= len(a) + 8 and fuzz.partial_ratio(a, b) >= 90:
+            return "grow"            # ซับเดิมมีท่อนต่อท้ายเพิ่ม (ยาวขึ้นเกินกว่าเศษที่ OCR อ่านเกิน)
         if fuzz.ratio(a, b) >= SAME_LINE:
             return "same"
         short, long_ = (a, b) if len(a) <= len(b) else (b, a)
@@ -552,7 +562,9 @@ class App(QObject):
             self._drop_pending()                     # เฟรมนี้ยืนยันว่ายังเป็นซับเดิม
             # ซับเดิมบนจอ แค่ OCR อ่านเพี้ยน -> คงคำแปลเดิมไว้ ไม่วาดใหม่ ไม่สลับคำแปล
             # ยกเว้นรอบนี้อ่านได้ดีกว่า (แปลได้ครบ ในขณะที่ที่แสดงอยู่ยังไม่ครบ) -> เติมให้
-            if full_old or not full_new:
+            # ซับยาวขึ้น (เกมขึ้นทีละท่อน/ทีละบรรทัด) และท่อนที่ยาวขึ้นแปลได้ครบ -> เปลี่ยนเป็นคำแปลเต็ม
+            grown = verdict == "grow" and full_new and [p["th"] for p in turns] != [p["th"] for p in shown]
+            if not grown and (full_old or not full_new):
                 return
             self._display(turns, text, ms, "fill", live)
             return
@@ -566,7 +578,9 @@ class App(QObject):
             pend = self._pending
             if pend is None or self._compare(pend[0], turns) == "new":
                 self._pending = (turns, text, ms)    # คล้ายซับเดิม -> รอดูอีกนิดก่อนเปลี่ยน
-                self.confirm_timer.start()
+                # ข้อความที่ไม่มีคำแปลเลย (เช่น ป้าย HUD/แจ้งเตือนที่แวบเข้ากรอบ) ต้องค้างนานกว่าถึงจะล้างซับเดิม
+                self.confirm_timer.start(UNTRANSLATED_CONFIRM_MS if untranslated else CONFIRM_MS)
+                self._trace("ยืนยัน", "รอดูก่อนเปลี่ยนซับ")
                 return
             pend_full = not any(p["partial"] for p in pend[0]) and any(p["th"] for p in pend[0])
             same_th = [p["th"] for p in pend[0]] == [p["th"] for p in turns]
@@ -579,6 +593,8 @@ class App(QObject):
         self._display(turns, text, ms, "new", live)
 
     def _drop_pending(self):
+        if self._pending is not None:
+            self._trace("ยืนยัน", "ยกเลิก (เฟรมถัดไปยังเป็นซับเดิม)")
         self._pending = None
         self.confirm_timer.stop()
 
@@ -590,6 +606,8 @@ class App(QObject):
 
     def _display(self, turns, text, ms, verdict, live):
         shown_th = [p for p in turns if p["th"]]
+        self._trace("จอ", f"{verdict}: " + (" | ".join(f"{p['speaker']}: {p['th']}" if p["speaker"] else p["th"]
+                                                     for p in shown_th) or "(ไม่มีคำแปล)"))
         state = "live" if live else ("miss" if any(p["partial"] for p in turns) else "hit")
         self.panel.show_reading(flat(text), "  ".join(p["th"] for p in shown_th), ms, state)
         if not shown_th:
@@ -610,6 +628,7 @@ class App(QObject):
         """ซับอังกฤษหายจากจอจริงแล้ว"""
         if self.current_text:
             return
+        self._trace("จอ", "ซับหาย -> เริ่มซ่อน")
         self._drop_pending()
         self.shown = None
         self.panel.show_reading("", "")
@@ -626,6 +645,45 @@ class App(QObject):
         if self.current_text and en in flat(self.current_text):
             turns = self.composer.compose_turns(self.current_text, live=False, show_miss=self.s["show_untranslated"])
             self._show(turns, self.current_text, None, live=True)
+
+    BUG_DIR = ROOT / "data" / "bug_reports"
+
+    def save_bug_report(self):
+        """ผู้ใช้เห็นซับกระพริบ/ค้าง แล้วกด Ctrl+Alt+B -> เก็บเหตุการณ์ 40 วินาทีล่าสุด + ภาพกรอบซับ ณ ตอนนั้น"""
+        from app import updater
+        try:
+            self.BUG_DIR.mkdir(parents=True, exist_ok=True)
+            stamp = time.strftime("%Y%m%d-%H%M%S")
+            now = time.time()
+            events = [(t, k, d) for t, k, d in self.trace if now - t <= 40]
+            cur = self.overlay.current
+            lines = [f"แจ้งบัคซับ {time.strftime('%Y-%m-%d %H:%M:%S')}",
+                     f"รุ่นโปรแกรม {updater.code_version() or 'dev'} / exe {updater.exe_version() or '-'} / คลัง {updater.local_version()}",
+                     f"ตั้งค่า: fps={self.s['fps']} brightness={self.s['brightness']} hide_after_ms={self.s['hide_after_ms']} "
+                     f"prev_lines={self.s['prev_lines']} position={self.s['position']} region={self.s.get('region')}",
+                     "ซับบนจอตอนกด: " + (" | ".join(f"{s}: {t}" if s else t for s, t in cur.get("parts", [])) if cur else "(ว่าง)"),
+                     "OCR อ่านได้ล่าสุด: " + repr(self.current_text), "",
+                     "วินาทีก่อนกด | ชนิด | รายละเอียด"]
+            lines += [f"{t - now:7.2f} | {k:6s} | {d}" for t, k, d in events]
+            path = self.BUG_DIR / f"bug-{stamp}.txt"
+            path.write_text("\n".join(lines), encoding="utf-8")
+            region = self.s.get("region")
+            if region:
+                try:
+                    import cv2
+                    import numpy as np
+                    from app.ocr_engine import new_screen_grabber
+                    with new_screen_grabber() as g:
+                        img = np.asarray(g.grab(region))
+                    cv2.imencode(".png", img)[1].tofile(str(self.BUG_DIR / f"bug-{stamp}.png"))
+                except Exception as e:
+                    log(f"[bug] เก็บภาพไม่ได้: {e}")
+            # ส่งสรุปให้ผู้ทำโปรแกรม (ถ้าเปิดส่งประโยคตกหล่นไว้) — เฉพาะข้อความซับ ไม่มีข้อมูลส่วนตัว
+            self.reporter.add_raw("[แจ้งบัค] " + "\n".join(lines[:5] + lines[-25:]))
+            log(f"[bug] บันทึกแจ้งบัคที่ {path.name} ({len(events)} เหตุการณ์)")
+            self.tray.showMessage("ซับไทย GTA VI", f"บันทึกแจ้งบัคแล้ว\n{path.name} (โฟลเดอร์ data\\bug_reports)", T.app_icon(), 3000)
+        except Exception:
+            log("[bug] " + traceback.format_exc())
 
     CORRECTIONS = ROOT / "data" / "corrections.tsv"
 
@@ -806,7 +864,7 @@ class App(QObject):
 
     def on_hotkey(self, name):
         {"toggle": self.toggle, "region": self.select_region, "settings": self.open_settings,
-         "history": self.show_history, "quit": self.quit,
+         "history": self.show_history, "quit": self.quit, "bug": self.save_bug_report,
          "english": lambda: self.apply_settings({**self.s, "show_english": not self.s["show_english"]}),
          }[name]()
 

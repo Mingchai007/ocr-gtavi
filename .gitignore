@@ -31,3 +31,4 @@ scratch_*.txt
 *.lnk
 data/corrections.tsv
 data/app_update/
+data/bug_reports/
