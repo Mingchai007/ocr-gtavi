@@ -781,6 +781,9 @@ class App(QObject):
     def web_url(self):
         return self.web.url if self.web is not None else ""
 
+    def web_urls(self):
+        return self.web.urls if self.web is not None else []
+
     def _sync_live_hint(self):
         """บอกในหน้าหลักว่าตัวแปลสดพร้อมไหม (เปิดแปลสดไว้แต่ไม่มีคีย์ = ไม่ได้แปลจริง)"""
         text, ok = self.tr.status()

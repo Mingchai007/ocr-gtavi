@@ -98,7 +98,15 @@ class WebFeed:
 
     @property
     def url(self):
-        return f"http://127.0.0.1:{self.port}/"
+        """ลิงก์ที่ใส่ใน TikTok: TikTok ไม่รับลิงก์แบบตัวเลข IP (127.0.0.1) จึงใช้ชื่อโดเมนสาธารณะ
+        localtest.me ที่ชี้กลับมาที่เครื่องตัวเองเสมอ (ข้อมูลซับไม่ออกจากเครื่อง)"""
+        return f"http://localtest.me:{self.port}/"
+
+    @property
+    def urls(self):
+        """ลิงก์ทั้งหมดที่ใช้ได้ (เผื่อแบบแรกไม่ได้ผล)"""
+        return [self.url, f"http://127.0.0.1.nip.io:{self.port}/", f"http://localhost:{self.port}/",
+                f"http://127.0.0.1:{self.port}/"]
 
     def _handler(self):
         feed = self
@@ -119,6 +127,7 @@ class WebFeed:
                     return
                 self.send_response(200)
                 self.send_header("Content-Type", ctype)
+                self.send_header("Access-Control-Allow-Origin", "*")
                 self.send_header("Content-Length", str(len(body)))
                 self.send_header("Cache-Control", "no-store")
                 self.end_headers()

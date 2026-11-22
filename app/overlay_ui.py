@@ -789,6 +789,10 @@ class SettingsDialog(QDialog):
         except RuntimeError:
             return
         self.web_lbl.setText(url or "เปิดสวิตช์ด้านบนก่อน แล้วลิงก์จะขึ้นตรงนี้")
+        if url:
+            port = url.rstrip("/").rsplit(":", 1)[-1]
+            self.web_lbl.setToolTip(f"ถ้า TikTok ไม่รับลิงก์นี้ ลองแบบอื่น:\nhttp://127.0.0.1.nip.io:{port}/\n"
+                                    f"http://localhost:{port}/")
         self.web_lbl.setEnabled(bool(url))
         self.web_btn.setEnabled(bool(url))
 
