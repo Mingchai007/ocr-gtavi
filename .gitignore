@@ -32,3 +32,5 @@ scratch_*.txt
 data/corrections.tsv
 data/app_update/
 data/bug_reports/
+# ใบรับรอง https ของเครื่องนี้ (มีกุญแจส่วนตัว ห้ามขึ้น git)
+data/web_cert/

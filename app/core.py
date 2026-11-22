@@ -885,7 +885,7 @@ class App(QObject):
     def open_settings(self):
         if self.settings_dlg is None or not self.settings_dlg.isVisible():
             self.settings_dlg = SettingsDialog(self.s, live_status=self.tr.status, can_report=self.reporter.available,
-                                               web_url=self.web_url)
+                                               web_url=self.web_url, web_urls=self.web_urls)
             self.settings_dlg.set_update_status(*self._update_status, busy=self._updating, restart=self._restart_ready)
             self.settings_dlg.update_req.connect(lambda: self.check_update(manual=True))
             self.settings_dlg.restart_req.connect(self.restart)

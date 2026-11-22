@@ -541,7 +541,7 @@ class SettingsDialog(QDialog):
     WEIGHTS = [("ปกติ", 400), ("กลาง", 600), ("หนา", 700), ("หนามาก", 900)]
     FPS = [("ประหยัดเครื่อง", 15), ("ปกติ", 30), ("ไวที่สุด", 60)]
 
-    def __init__(self, s, parent=None, live_status=None, can_report=False, web_url=None):
+    def __init__(self, s, parent=None, live_status=None, can_report=False, web_url=None, web_urls=None):
         super().__init__(parent)
         self.setObjectName("Root")
         self.setWindowTitle("ตั้งค่า — ซับไทย GTA VI")
@@ -553,6 +553,7 @@ class SettingsDialog(QDialog):
         self._restart = False
         self.can_report = can_report            # มีปลายทางรับประโยคตกหล่น (data/report_target.json) ไหม
         self.web_url = web_url                  # ฟังก์ชันคืนลิงก์หน้าเว็บซับ ("" = ยังไม่ได้เปิด)
+        self.web_urls = web_urls                # ฟังก์ชันคืนลิงก์ทั้งหมด (สำรอง)
 
         lay = QVBoxLayout(self)
         lay.setContentsMargins(16, 16, 16, 14)
@@ -665,6 +666,17 @@ class SettingsDialog(QDialog):
         self.web_btn.clicked.connect(self._copy_web_url)
         row.addWidget(self.web_lbl, 1)
         row.addWidget(self.web_btn)
+        lay.addLayout(row)
+        row = QHBoxLayout()
+        row.setSpacing(8)
+        self.cert_lbl = QLabel()
+        self.cert_lbl.setObjectName("Muted")
+        self.cert_lbl.setWordWrap(True)
+        self.cert_btn = button(" ติดตั้งใบรับรอง https", T.Glyph.KEY,
+                               tip="ให้ TikTok เปิดลิงก์ https ของเครื่องนี้ได้ — ทำครั้งเดียว Windows จะถามยืนยัน")
+        self.cert_btn.clicked.connect(self._install_cert)
+        row.addWidget(self.cert_lbl, 1)
+        row.addWidget(self.cert_btn)
         lay.addLayout(row)
         self._refresh_web_url()
         lay.addWidget(hline())
@@ -790,11 +802,36 @@ class SettingsDialog(QDialog):
             return
         self.web_lbl.setText(url or "เปิดสวิตช์ด้านบนก่อน แล้วลิงก์จะขึ้นตรงนี้")
         if url:
-            port = url.rstrip("/").rsplit(":", 1)[-1]
-            self.web_lbl.setToolTip(f"ถ้า TikTok ไม่รับลิงก์นี้ ลองแบบอื่น:\nhttp://127.0.0.1.nip.io:{port}/\n"
-                                    f"http://localhost:{port}/")
+            alts = self.web_urls()[1:] if getattr(self, "web_urls", None) else []
+            self.web_lbl.setToolTip("ถ้า TikTok ไม่รับลิงก์นี้ ลองแบบอื่น:\n" + "\n".join(alts) if alts else "")
         self.web_lbl.setEnabled(bool(url))
         self.web_btn.setEnabled(bool(url))
+        self.cert_lbl.setVisible(bool(url))
+        self.cert_btn.setVisible(bool(url))
+        if url:
+            self._refresh_cert()
+
+    def _refresh_cert(self):
+        if not hasattr(self, "cert_lbl"):
+            return
+        from app import webcert
+        ok = webcert.is_installed()
+        self.cert_lbl.setText("ใบรับรอง https ติดตั้งแล้ว — ใช้ลิงก์ https ได้" if ok
+                              else "TikTok รับเฉพาะลิงก์ https: กดติดตั้งใบรับรองครั้งเดียว (Windows จะถามยืนยัน กด Yes)")
+        self.cert_lbl.setStyleSheet(f"color:{T.OK};" if ok else f"color:{T.WARN};")
+        self.cert_btn.setVisible(not ok)
+
+    def _install_cert(self):
+        from app import webcert
+        self.cert_btn.setEnabled(False)
+        self.cert_lbl.setText("กำลังติดตั้ง… กด Yes ในกล่องของ Windows")
+        QApplication.processEvents()
+        try:
+            webcert.install()
+        except Exception as e:
+            QMessageBox.warning(self, "ติดตั้งใบรับรองไม่สำเร็จ", f"{type(e).__name__}: {e}")
+        self.cert_btn.setEnabled(True)
+        self._refresh_cert()
 
     def _copy_web_url(self):
         url = self.web_url() if self.web_url else ""

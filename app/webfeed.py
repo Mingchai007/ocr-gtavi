@@ -7,6 +7,7 @@
 ไม่ต้องใช้ฉากเขียว ไม่ต้องใช้ OBS และไม่ต้องให้โปรแกรมจับภาพเห็นหน้าต่างซับ
 """
 import json
+import ssl
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
@@ -94,19 +95,45 @@ class WebFeed:
             raise OSError("เปิดเว็บซับไม่ได้ (พอร์ต 8765-8774 ถูกใช้หมด)")
         self.httpd.daemon_threads = True
         threading.Thread(target=self.httpd.serve_forever, daemon=True).start()
+        # https (TikTok LIVE Studio รับเฉพาะลิงก์ https) — ใช้ใบรับรองของเครื่องนี้ (app/webcert.py)
+        self.httpsd = None
+        self.https_port = None
+        try:
+            from app.webcert import ensure_cert
+            crt, key = ensure_cert()
+            ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+            ctx.load_cert_chain(str(crt), str(key))
+            for p in range(port + 1, port + 12):
+                if p == self.port:
+                    continue
+                try:
+                    srv = ThreadingHTTPServer(("127.0.0.1", p), self._handler())
+                except OSError:
+                    continue
+                srv.socket = ctx.wrap_socket(srv.socket, server_side=True)
+                srv.daemon_threads = True
+                self.httpsd, self.https_port = srv, p
+                threading.Thread(target=srv.serve_forever, daemon=True).start()
+                break
+        except Exception as e:
+            log(f"[web] เปิด https ไม่ได้: {type(e).__name__}: {e}")
         log(f"[web] เปิดหน้าเว็บซับที่ {self.url}")
 
     @property
     def url(self):
-        """ลิงก์ที่ใส่ใน TikTok: TikTok ไม่รับลิงก์แบบตัวเลข IP (127.0.0.1) จึงใช้ชื่อโดเมนสาธารณะ
-        localtest.me ที่ชี้กลับมาที่เครื่องตัวเองเสมอ (ข้อมูลซับไม่ออกจากเครื่อง)"""
-        return f"http://localtest.me:{self.port}/"
+        """ลิงก์ที่ใส่ใน TikTok: https + ชื่อโดเมน localtest.me ที่ชี้กลับมาที่เครื่องตัวเองเสมอ
+        (TikTok ไม่รับลิงก์ http / ตัวเลข IP — ข้อมูลซับไม่ออกจากเครื่อง)"""
+        return self.urls[0]
 
     @property
     def urls(self):
         """ลิงก์ทั้งหมดที่ใช้ได้ (เผื่อแบบแรกไม่ได้ผล)"""
-        return [self.url, f"http://127.0.0.1.nip.io:{self.port}/", f"http://localhost:{self.port}/",
-                f"http://127.0.0.1:{self.port}/"]
+        out = []
+        if self.https_port:
+            out += [f"https://localtest.me:{self.https_port}/", f"https://127.0.0.1.nip.io:{self.https_port}/"]
+        out += [f"http://localtest.me:{self.port}/", f"http://127.0.0.1.nip.io:{self.port}/",
+                f"http://localhost:{self.port}/"]
+        return out
 
     def _handler(self):
         feed = self
@@ -150,8 +177,10 @@ class WebFeed:
             self._state = data
 
     def close(self):
-        try:
-            self.httpd.shutdown()
-            self.httpd.server_close()
-        except Exception:
-            pass
+        for srv in (self.httpd, self.httpsd):
+            try:
+                if srv is not None:
+                    srv.shutdown()
+                    srv.server_close()
+            except Exception:
+                pass
