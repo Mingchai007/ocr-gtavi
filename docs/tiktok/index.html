@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="th"><head><meta charset="utf-8"><title>GTA TH Sub</title>
+<style>
+  html, body { margin: 0; height: 100%; background: transparent; overflow: hidden; }
+  #wrap { position: absolute; left: 0; right: 0; bottom: 4vh; display: flex; flex-direction: column;
+          align-items: center; gap: 0.25em; padding: 0 3vw; text-align: center; }
+  .line { display: inline-block; line-height: 1.35; padding: 0.05em 0.45em; border-radius: 0.3em;
+          white-space: pre-wrap; word-break: break-word; max-width: 94vw; }
+  .spk { margin-right: 0.3em; }
+  .fade { transition: opacity .15s; }
+  #st { position: absolute; left: 8px; top: 8px; font: 13px "Leelawadee UI", sans-serif; color: #fff;
+        background: rgba(0,0,0,.6); padding: 4px 8px; border-radius: 6px; }
+</style></head>
+<body><div id="wrap"></div>
+<script>
+let last = "";
+function outline(w, c) {
+  if (w <= 0) return "";
+  const s = [];
+  for (let a = 0; a < 16; a++) {
+    const r = a * Math.PI / 8;
+    s.push(`${(Math.cos(r) * w).toFixed(1)}px ${(Math.sin(r) * w).toFixed(1)}px 0 ${c}`);
+  }
+  return s.join(",");
+}
+function render(st) {
+  const wrap = document.getElementById("wrap");
+  wrap.innerHTML = "";
+  const s = st.style || {};
+  for (const b of (st.blocks || [])) {
+    const el = document.createElement("div");
+    el.className = "line fade";
+    el.style.fontFamily = `"${s.font}", "Leelawadee UI", "Tahoma", sans-serif`;
+    el.style.fontSize = Math.round(s.size * b.scale) + "px";
+    el.style.fontWeight = s.weight;
+    el.style.color = s.color;
+    el.style.opacity = b.alpha;
+    let sh = outline(s.outline * b.scale, s.outline_color);
+    if (s.shadow) sh = (sh ? sh + "," : "") + `2px 3px 4px rgba(0,0,0,.55)`;
+    el.style.textShadow = sh;
+    if (s.box > 0) el.style.background = `rgba(0,0,0,${(s.box / 255).toFixed(2)})`;
+    if (b.speaker) {
+      const sp = document.createElement("span");
+      sp.className = "spk"; sp.style.color = s.speaker_color; sp.textContent = b.speaker + ":";
+      el.appendChild(sp);
+    }
+    el.appendChild(document.createTextNode(b.text));
+    wrap.appendChild(el);
+  }
+}
+// เปิดจากโปรแกรมในเครื่อง -> ถาม /state ตรงๆ
+// เปิดจากเว็บสาธารณะ (GitHub Pages สำหรับ TikTok) -> ถามโปรแกรมซับในเครื่องคนดูเอง (ข้อมูลไม่ผ่านเซิร์ฟเวอร์ใด)
+const q = new URLSearchParams(location.search);
+const port = q.get("p") || "8765";
+const LOCAL = /^(127\.|localhost$|localtest\.me$|.*\.nip\.io$)/.test(location.hostname);
+const SOURCES = LOCAL ? ["/state"] : [`http://127.0.0.1:${port}/state`, `http://localhost:${port}/state`,
+                                      `https://localtest.me/state`];
+let src = 0, fails = 0;
+function status(msg) {
+  let el = document.getElementById("st");
+  if (!msg) { if (el) el.remove(); return; }
+  if (!el) { el = document.createElement("div"); el.id = "st"; document.body.appendChild(el); }
+  el.textContent = msg;
+}
+async function tick() {
+  try {
+    const r = await fetch(SOURCES[src], {cache: "no-store"});
+    const t = await r.text();
+    fails = 0; status("");
+    if (t !== last) { last = t; render(JSON.parse(t)); }
+  } catch (e) {
+    // โปรแกรมซับปิดอยู่ / ทางนี้ถูกบล็อก -> ลองทางถัดไป
+    src = (src + 1) % SOURCES.length;
+    if (++fails >= SOURCES.length * 3) status("รอโปรแกรมซับไทย… (เปิดโปรแกรม แล้วเปิดสวิตช์ \"ลิงก์ซับพื้นโปร่งใส\")");
+  }
+  setTimeout(tick, fails ? 400 : 100);
+}
+tick();
+</script></body></html>

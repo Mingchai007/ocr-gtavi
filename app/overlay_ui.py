@@ -807,9 +807,11 @@ class SettingsDialog(QDialog):
         self.web_lbl.setEnabled(bool(url))
         self.web_btn.setEnabled(bool(url))
         self.cert_lbl.setVisible(bool(url))
-        self.cert_btn.setVisible(bool(url))
+        self.cert_btn.setVisible(False)       # ลิงก์หลักเป็นเว็บสาธารณะแล้ว ไม่ต้องติดตั้งใบรับรอง
         if url:
-            self._refresh_cert()
+            self.cert_lbl.setText("หน้าเว็บนี้อยู่บน GitHub แต่ดึงซับจากโปรแกรมในเครื่องนี้โดยตรง "
+                                  "(ต้องเปิดโปรแกรมซับค้างไว้ระหว่างสตรีม)")
+            self.cert_lbl.setStyleSheet("")
 
     def _refresh_cert(self):
         if not hasattr(self, "cert_lbl"):

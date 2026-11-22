@@ -25,6 +25,8 @@ PAGE = """<!doctype html>
           white-space: pre-wrap; word-break: break-word; max-width: 94vw; }
   .spk { margin-right: 0.3em; }
   .fade { transition: opacity .15s; }
+  #st { position: absolute; left: 8px; top: 8px; font: 13px "Leelawadee UI", sans-serif; color: #fff;
+        background: rgba(0,0,0,.6); padding: 4px 8px; border-radius: 6px; }
 </style></head>
 <body><div id="wrap"></div>
 <script>
@@ -63,17 +65,49 @@ function render(st) {
     wrap.appendChild(el);
   }
 }
+// เปิดจากโปรแกรมในเครื่อง -> ถาม /state ตรงๆ
+// เปิดจากเว็บสาธารณะ (GitHub Pages สำหรับ TikTok) -> ถามโปรแกรมซับในเครื่องคนดูเอง (ข้อมูลไม่ผ่านเซิร์ฟเวอร์ใด)
+const q = new URLSearchParams(location.search);
+const port = q.get("p") || "8765";
+const LOCAL = /^(127\\.|localhost$|localtest\\.me$|.*\\.nip\\.io$)/.test(location.hostname);
+const SOURCES = LOCAL ? ["/state"] : [`http://127.0.0.1:${port}/state`, `http://localhost:${port}/state`,
+                                      `https://localtest.me/state`];
+let src = 0, fails = 0;
+function status(msg) {
+  let el = document.getElementById("st");
+  if (!msg) { if (el) el.remove(); return; }
+  if (!el) { el = document.createElement("div"); el.id = "st"; document.body.appendChild(el); }
+  el.textContent = msg;
+}
 async function tick() {
   try {
-    const r = await fetch("/state", {cache: "no-store"});
+    const r = await fetch(SOURCES[src], {cache: "no-store"});
     const t = await r.text();
+    fails = 0; status("");
     if (t !== last) { last = t; render(JSON.parse(t)); }
-  } catch (e) { /* โปรแกรมซับปิดอยู่ -> ลองใหม่รอบหน้า */ }
-  setTimeout(tick, 100);
+  } catch (e) {
+    // โปรแกรมซับปิดอยู่ / ทางนี้ถูกบล็อก -> ลองทางถัดไป
+    src = (src + 1) % SOURCES.length;
+    if (++fails >= SOURCES.length * 3) status("รอโปรแกรมซับไทย… (เปิดโปรแกรม แล้วเปิดสวิตช์ \\"ลิงก์ซับพื้นโปร่งใส\\")");
+  }
+  setTimeout(tick, fails ? 400 : 100);
 }
 tick();
 </script></body></html>
 """
+
+
+def public_page_url(port):
+    """หน้าเว็บซับบน GitHub Pages (TikTok ไม่รับลิงก์ที่ชี้มาที่เครื่องตัวเอง แต่รับเว็บสาธารณะ)
+    หน้านั้นคือไฟล์ docs/tiktok/index.html (= PAGE) ซึ่งดึงซับจาก http://127.0.0.1:<port>/state ของเครื่องนี้"""
+    try:
+        from app.matcher import ROOT
+        repo = json.loads((ROOT / "data" / "update_source.json").read_text(encoding="utf-8"))["repo"]
+        owner, name = repo.split("/", 1)
+    except Exception:
+        return ""
+    q = "" if port == DEFAULT_PORT else f"?p={port}"
+    return f"https://{owner.lower()}.github.io/{name}/tiktok/{q}"
 
 
 class WebFeed:
@@ -130,6 +164,9 @@ class WebFeed:
     def urls(self):
         """ลิงก์ทั้งหมดที่ใช้ได้ (เผื่อแบบแรกไม่ได้ผล)"""
         out = []
+        pub = public_page_url(self.port)
+        if pub:
+            out.append(pub)
         if self.https_port:
             hp = "" if self.https_port == 443 else f":{self.https_port}"
             out += [f"https://localtest.me{hp}/", f"https://127.0.0.1.nip.io{hp}/"]
@@ -144,6 +181,17 @@ class WebFeed:
             def log_message(self, *a):
                 pass
 
+            def do_OPTIONS(self):
+                # หน้าเว็บสาธารณะ (https) ขอถามเครื่องตัวเอง: Chrome ถามก่อนด้วย OPTIONS (Private Network Access)
+                self.send_response(204)
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.send_header("Access-Control-Allow-Methods", "GET, OPTIONS")
+                self.send_header("Access-Control-Allow-Headers", "*")
+                self.send_header("Access-Control-Allow-Private-Network", "true")
+                self.send_header("Access-Control-Allow-Local-Network", "true")
+                self.send_header("Content-Length", "0")
+                self.end_headers()
+
             def do_GET(self):
                 if self.path.startswith("/state"):
                     with feed._lock:
@@ -157,6 +205,7 @@ class WebFeed:
                 self.send_response(200)
                 self.send_header("Content-Type", ctype)
                 self.send_header("Access-Control-Allow-Origin", "*")
+                self.send_header("Access-Control-Allow-Private-Network", "true")
                 self.send_header("Content-Length", str(len(body)))
                 self.send_header("Cache-Control", "no-store")
                 self.end_headers()
