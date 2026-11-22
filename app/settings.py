@@ -7,9 +7,9 @@ from app.matcher import ROOT
 
 PATH = ROOT / "data" / "settings.json"
 CODE_PREFIX = "GTHSUB1:"
-VERSION = 2
+VERSION = 3
 # ค่าที่ผูกกับเครื่อง/จอ/บัญชีของแต่ละคน -> ไม่ใส่ในโค้ดแชร์
-LOCAL_KEYS = {"region", "screen_place", "screen_pos","live_translate", "gemini_key", "use_mymemory", "auto_update", "report_missed", "_v"}
+LOCAL_KEYS = {"region", "screen_place", "screen_pos", "live_translate", "gemini_key", "use_mymemory", "auto_update", "report_missed", "_v"}
 
 DEFAULTS = {
     "_v": VERSION,
@@ -37,7 +37,7 @@ DEFAULTS = {
     "obs_mode": False,           # True = พื้นสีทึบให้ OBS ดูดได้ (Chroma key)
     "obs_color": "#00FF00",
     "obs_screen": -1,            # หน้าต่างซับแยก: -1 = หน้าต่างปกติ, 0,1,.. = เต็มจอบนจอที่เลือก (แบบ Fullscreen Projector)
-    "web_feed": False,           # เปิดหน้าเว็บซับพื้นโปร่งใส (ใส่ใน TikTok LIVE Studio แบบ "ลิงก์" / OBS Browser Source)
+    "web_feed": True,          # เปิดหน้าเว็บซับพื้นโปร่งใส (ใส่ใน TikTok LIVE Studio แบบ "ลิงก์" / OBS Browser Source)
     "stream_visible": False,     # True = ให้ OBS/โปรแกรมจับภาพเห็นซับไทยบนจอ (สตรีมด้วย Display/Game Capture)
     # การทำงาน
     "fps": 30,                   # เช็กซับบนจอกี่ครั้งต่อวินาที (15 ประหยัด / 30 ปกติ / 60 ไวสุด)
@@ -66,6 +66,8 @@ def load():
         s.update(saved)
         if old < 2 and s.get("fps") == 20:      # 20 คือค่าเริ่มต้นเดิม (ตั้งเองไม่ได้) -> ใช้ค่าเริ่มต้นใหม่
             s["fps"] = DEFAULTS["fps"]
+        if old < 3:                             # รุ่น 3: ลิงก์ซับ (OBS/TikTok) เปิดเป็นค่าเริ่มต้น — เปิดให้คนที่ยังไม่เคยใช้
+            s["web_feed"] = True
         s["_v"] = VERSION
     return s
 
