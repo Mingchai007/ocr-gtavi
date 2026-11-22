@@ -44,15 +44,17 @@ function render(st) {
   const wrap = document.getElementById("wrap");
   wrap.innerHTML = "";
   const s = st.style || {};
+  if (s.bottom !== undefined) wrap.style.bottom = Math.max(0, s.bottom) + "vh";
   for (const b of (st.blocks || [])) {
     const el = document.createElement("div");
     el.className = "line fade";
     el.style.fontFamily = `"${s.font}", "Leelawadee UI", "Tahoma", sans-serif`;
-    el.style.fontSize = Math.round(s.size * b.scale) + "px";
+    // ขนาดตัวอักษรตามสัดส่วนจอ 1080p (ภาพใน TikTok เล็ก/ใหญ่แค่ไหน ซับก็สัดส่วนเท่ากับบนจอเกม)
+    el.style.fontSize = (s.size * b.scale * 100 / 1080).toFixed(2) + "vh";
     el.style.fontWeight = s.weight;
     el.style.color = s.color;
     el.style.opacity = b.alpha;
-    let sh = outline(s.outline * b.scale, s.outline_color);
+    let sh = outline(s.outline * b.scale * innerHeight / 1080, s.outline_color);
     if (s.shadow) sh = (sh ? sh + "," : "") + `2px 3px 4px rgba(0,0,0,.55)`;
     el.style.textShadow = sh;
     if (s.box > 0) el.style.background = `rgba(0,0,0,${(s.box / 255).toFixed(2)})`;
@@ -229,7 +231,10 @@ class WebFeed:
             "style": {"font": s.get("font_family"), "size": s.get("font_size"), "weight": s.get("font_weight"),
                       "color": s.get("text_color"), "outline": s.get("outline_width"),
                       "outline_color": s.get("outline_color"), "shadow": bool(s.get("shadow")),
-                      "speaker_color": s.get("speaker_color"), "box": s.get("box_opacity", 0)},
+                      "speaker_color": s.get("speaker_color"), "box": s.get("box_opacity", 0),
+                      # ตำแหน่ง: ระยะจากขอบล่าง (% ของความสูงภาพ) — ทับซับอังกฤษ ~5%, เหนือซับอังกฤษ ~13%
+                      # "เลื่อนขึ้น/ลง" (px บนจอ 1080) แปลงเป็น % ด้วย
+                      "bottom": round((13 if s.get("position") == "above" else 5) - (s.get("offset_y") or 0) / 10.8, 2)},
         }
         data = json.dumps(state, ensure_ascii=False).encode("utf-8")
         with self._lock:
