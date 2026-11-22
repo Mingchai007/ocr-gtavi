@@ -783,8 +783,8 @@ class SettingsDialog(QDialog):
         lay.addWidget(hline())
         lay.addWidget(self._option("stream_visible", "ให้ OBS / โปรแกรมสตรีมเห็นซับไทย",
                                    "เปิดตอนสตรีมด้วยการจับทั้งจอ — แนะนำตั้งตำแหน่งเป็น \"เหนือซับอังกฤษ\""))
-        lay.addWidget(self._option("obs_mode", "โหมด OBS (หน้าต่างแยก)",
-                                   "หน้าต่างซับแยก ให้ OBS / TikTok จับภาพ (เลือกเต็มจอบนจอสองได้ด้านล่าง)"))
+        lay.addWidget(self._option("obs_mode", "หน้าต่างซับแยก / ฉากเขียว (วิธีเก่า)",
+                                   "ไม่ต้องเปิดถ้าใช้ลิงก์ซับด้านบน — ใช้เฉพาะอยากได้จอซับเต็มจอบนจอสอง"))
         f2 = self._form()
         f2.addRow("สีพื้นหน้าต่าง OBS", self._color("obs_color", "สีพื้น OBS"))
         f2.addRow("แสดงหน้าต่างแยก", self._obs_screen_combo())
