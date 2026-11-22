@@ -29389,7 +29389,7 @@
  },
  {
   "en": "That's one of them there.",
-  "th": "นั่นไง หนึ่งในพวกมัน",
+  "th": "นั่นไง พวกมันคนนึงอยู่ตรงนั้น",
   "source": "gta6_part1",
   "time": 28251.52
  },
@@ -29425,7 +29425,7 @@
  },
  {
   "en": "Oh, I know you do, Spartan. Can't wait to hear all about it.",
-  "th": "รู้อยู่แล้วว่าไหว นักรบสปาร์ตัน รอฟังเรื่องเลย",
+  "th": "รู้หรอกน่า สปาร์ตัน รอฟังเรื่องทั้งหมดไม่ไหวแล้ว",
   "source": "gta6_part1",
   "time": 28274.48
  },
@@ -29545,7 +29545,7 @@
  },
  {
   "en": "Come on. I'm sure he's fine.",
-  "th": "ไปเถอะ เขาไม่เป็นไรหรอก",
+  "th": "เอาน่า คงไม่เป็นไรหรอก",
   "source": "gta6_part1",
   "time": 28396.15
  },
@@ -29599,7 +29599,7 @@
  },
  {
   "en": "Oh, cool. I got this.",
-  "th": "โอ้ เจ๋ง จัดให้",
+  "th": "โอเค สบายมาก",
   "source": "gta6_part1",
   "time": 28418.0
  },
@@ -29689,7 +29689,7 @@
  },
  {
   "en": "but they're [__] fakes, man. For real.",
-  "th": "แต่ของปลอมทั้งนั้นเพื่อน จริงๆ",
+  "th": "แต่แม่งของปลอมทั้งนั้นเพื่อน! จริงๆ นะ",
   "source": "gta6_part1",
   "time": 28501.76
  },
@@ -30175,7 +30175,7 @@
  },
  {
   "en": "Could say the same to you.",
-  "th": "ก็พูดแบบเดียวกันกับคุณได้นะ",
+  "th": "ก็พูดแบบนั้นได้เหมือนกัน",
   "source": "gta6_part1",
   "time": 29397.03
  },
@@ -30469,7 +30469,7 @@
  },
  {
   "en": "Yeah, pretty much.",
-  "th": "ประมาณนั้น",
+  "th": "ใช่ ก็ประมาณนั้นแหละ",
   "source": "gta6_part1",
   "time": 29548.64
  },
@@ -30703,7 +30703,7 @@
  },
  {
   "en": "Hey, it's me. You must be sleeping.",
-  "th": "ฉันเอง คงหลับอยู่สินะ",
+  "th": "เฮ้ ฉันเอง คงหลับอยู่ล่ะสิ",
   "source": "gta6_part1",
   "time": 29786.87
  },
@@ -30745,7 +30745,7 @@
  },
  {
   "en": "He got us a new ride and should have some other work, too.",
-  "th": "เขาหารถใหม่ให้แล้ว น่าจะมีงานอื่นให้ด้วย",
+  "th": "เขาหารถคันใหม่ให้เราแล้ว แถมน่าจะมีงานอื่นให้อีกด้วย",
   "source": "gta6_part1",
   "time": 29798.96
  },
@@ -55765,7 +55765,7 @@
  },
  {
   "en": "Motel off the interstate west of VC.",
-  "th": "โมเต็ลริมทางหลวงทางตะวันตกของ ไวซ์ซิตี้",
+  "th": "โมเทลแถวทางด่วน ทางตะวันตกของไวซ์ซิตี้",
   "source": "gta6_part2",
   "time": 22344.0
  },
@@ -56791,7 +56791,7 @@
  },
  {
   "en": "Pretty sure the cops are here, too.",
-  "th": "ตำรวจอยู่นี่ด้วยแน่ๆ",
+  "th": "ตำรวจน่าจะมาด้วยแล้ว!",
   "source": "gta6_part3",
   "time": 1246.79
  },
@@ -56857,7 +56857,7 @@
  },
  {
   "en": "Dunk, chill.",
-  "th": "ดังค์ ใจเย็น",
+  "th": "ดังก์ ใจเย็น",
   "source": "gta6_part3",
   "time": 1275.83
  },
@@ -110700,6 +110700,708 @@
   "time": null
  },
  {
+  "en": "Given the lack of information provided at your check-in,",
+  "th": "เนื่องจากข้อมูลตอนเช็กอินไม่ครบ",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "I need to ask you to pay for your stay upfront.",
+  "th": "ต้องขอเก็บค่าห้องล่วงหน้า",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "Sorry, actually, I-I have to go.",
+  "th": "โทษที พอดีต้องไปแล้ว",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "Oh, shit. Lu?",
+  "th": "ชิบหาย ลู?",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "Yeah, says his name is Méndez.",
+  "th": "ใช่ บอกว่าชื่อเมนเดซ",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "Including Sergeant Pete Galecki.",
+  "th": "รวมถึงจ่าพีต กาเลคกี้ด้วย",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "Like crypto?",
+  "th": "อย่างคริปโตเหรอ?",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "'Cause the dayshift lady's a bitch.",
+  "th": "เพราะยัยกะเช้านั่นแม่งเหี้ย",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "Is the ambulance gonna find it and come lookin'?",
+  "th": "รถพยาบาลจะหาเจอแล้วตามมาดูไหม?",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "You were freaking out about a few Zombik. Their pills are cut with some shady-ass shit.",
+  "th": "แตกตื่นกับซอมบิกแค่ไม่กี่เม็ดเนี่ยนะ ยาพวกมันผสมของเหี้ยอะไรก็ไม่รู้",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "Ahh, right on schedule.",
+  "th": "อ่า ตรงเวลาเป๊ะ",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "They just wanna sell cheap, they don't care if...",
+  "th": "พวกมันแค่อยากขายถูก ไม่สนหรอกว่า...",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "They have a bunch of stash houses around here.",
+  "th": "พวกมันมีบ้านเก็บของแถวนี้เพียบเลย",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "So yeah, I wouldn't ring any doorbells if I was you.",
+  "th": "เป็นฉันจะไม่ไปกดกริ่งบ้านไหนเลยนะ",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "Unless, of course, you want to get...",
+  "th": "เว้นแต่จะอยากโดน...",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "You know, shootin' and stabbin'. They love that.",
+  "th": "พวกยิงกันแทงกันไง พวกมันชอบนักล่ะ",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "If Dunk is there, he's gonna bail as soon as he sees who's chasing us.",
+  "th": "ถ้าดังก์อยู่ที่นั่น เห็นคนไล่ตามเรามาเมื่อไหร่มันเผ่นแน่",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "...there, Vicki?",
+  "th": "...อยู่มั้ย วิคกี้?",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "He... was. I-I guess you just missed him... He went to the, um...",
+  "th": "เคย... อยู่ คลาดกันนิดเดียวเอง เขาไปที่ เอ่อ...",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "He's at the car wash.",
+  "th": "เขาอยู่ที่ร้านล้างรถ",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "What you need? Bet I could help you out.",
+  "th": "อยากได้อะไรล่ะ? เดี๋ยวฉันช่วยได้นะ",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "He still gonna be there?",
+  "th": "เขายังจะอยู่ที่นั่นมั้ย?",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "Dunk does most of his deals out of the car wash.",
+  "th": "ดังก์มันนัดซื้อขายส่วนใหญ่ที่ร้านล้างรถนั่นแหละ",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "Alright, so... Circling back. Is your non-junkie, definitely injured boyfriend your baby daddy?",
+  "th": "เอาล่ะ งั้น... กลับมาเรื่องเดิม แฟนเธอที่ไม่ได้ติดยาแต่เจ็บตัวแน่ๆ นั่น พ่อของลูกเหรอ?",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "You mean Jason? Complicated, but yeah.",
+  "th": "หมายถึงเจสันเหรอ? มันซับซ้อนน่ะ แต่ก็ใช่",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "Once I have enough money to get my own place,",
+  "th": "พอมีเงินหาที่อยู่ของตัวเองได้เมื่อไหร่",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "I'm taking Jordy for good. I'm sure you noticed,",
+  "th": "จะรับจอร์ดี้มาอยู่ด้วยถาวรเลย คงสังเกตเห็นแล้วนะ",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "but the motel isn't exactly the most child-friendly environment.",
+  "th": "ว่าโมเทลนี่มันไม่ค่อยเหมาะกับเด็กเท่าไหร่",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "Oh, Tomas isn't... He's not with us.",
+  "th": "อ๋อ โทมัสไม่ได้... เขาไม่ได้อยู่กับเรา",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "No! Damn. No. I just got out of prison. My aunt has him until we're back on our feet.",
+  "th": "เปล่า! ให้ตายสิ ไม่ใช่ เพิ่งออกจากคุกมา ป้าดูแลเขาให้อยู่จนกว่าเราจะตั้งตัวได้",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "Stop fuckin' lying! We know it was you, Don!",
+  "th": "เลิกตอแหลสักทีเหอะวะ! รู้อยู่ว่ามึงทำ ดอน!",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "Oh, shit! Go get 'em, boy! Go!",
+  "th": "ชิบหาย! ไปจับมันเลยไอ้หนู! ไป!",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "Shit! C'mon, start, start!",
+  "th": "ชิบหาย! เอ้า สตาร์ทสิ สตาร์ท!",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "Hasta luego, policía!",
+  "th": "ลาก่อนนะคุณตำรวจ!",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "Let's go get that idiot!",
+  "th": "ไปจับไอ้โง่นั่นกัน!",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "I can't talk right now, I got the Kolts on my ass.",
+  "th": "ตอนนี้คุยไม่ได้ พวกโคลท์สกำลังไล่บี้ตูดอยู่",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "No, no, that's us, we're-",
+  "th": "ไม่ๆ พวกเราเอง กำลัง—",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "So stupid it hurts.",
+  "th": "โง่จนปวดหัว",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "Oh fuck, I'm alive! Whoa...",
+  "th": "เชี่ย ยังไม่ตายเว้ย! โอ้โห...",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "The fuck are you on, man? You could've killed somebody!",
+  "th": "เล่นยาไรมาวะ? เกือบฆ่าคนตายแล้วนะ!",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "It was the cops...",
+  "th": "ก็ตำรวจมา...",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "Dunk, listen. This is Lucia. She's a very nice lady.",
+  "th": "ดังก์ ฟังนะ นี่ลูเซีย เธอเป็นคนดีมาก",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "She's gonna take you home.",
+  "th": "เดี๋ยวเธอไปส่งบ้าน",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "And to thank her, you're gonna find her some pills.",
+  "th": "แล้วหายาให้เธอเป็นการตอบแทนด้วย",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "Thank you, bud!",
+  "th": "ขอบใจมากเพื่อน!",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "I'll get your truck, Dunk. Just gotta take care of this.",
+  "th": "เดี๋ยวไปเอารถให้ ดังก์ ขอจัดการตรงนี้ก่อน",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "Can I interest anyone in Scampi Night over at Delights?",
+  "th": "สนใจไปคืนกุ้งสแกมปี้ที่ร้านดีไลท์สไหม?",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "Alright, so, um.",
+  "th": "โอเค งั้น... เอ่อ",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "You're gonna like, leave the area, or... whatever?",
+  "th": "จะออกจากแถวนี้ หรือ... อะไรยังไง?",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "And then I think it's a left? Uh, no, uh... a right, yeah.",
+  "th": "แล้วก็น่าจะเลี้ยวซ้ายมั้ง? เอ่อ ไม่ๆ... เลี้ยวขวา ใช่",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "Then you just keep goin' until-",
+  "th": "แล้วก็ตรงไปเรื่อยๆ จนกว่า—",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "I know how to get there, Dunk. Thank you.",
+  "th": "รู้ทางไปน่า ดังก์ ขอบใจ",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "C'mon honey, earn that scampi. Push.",
+  "th": "เอาหน่อยที่รัก ออกแรงแลกสแกมปี้หน่อย ดันไป",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "Phew! I'm glad that's over.",
+  "th": "เฮ้อ! จบสักที",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "Uh, hey. What was your name again?",
+  "th": "เอ่อ เฮ้ ชื่ออะไรแล้วนะ?",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "Alright. I'm Dunk.",
+  "th": "อ้อ ฉันดังก์",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "Yeah, I know. We've been looking for you all over town.",
+  "th": "รู้แล้ว ตามหานายทั่วเมืองเลย",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "Yeah, that's cause Vicki knows what's up!",
+  "th": "ใช่ เพราะวิคกี้รู้เรื่องดีไง!",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "If you're lookin' for pills, then Gellhorn's fuckin' candy land.",
+  "th": "ถ้าหายาอยู่ เกลฮอร์นนี่แม่งสวรรค์ชัดๆ",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "Kolts will sell you anything. Oxies, Percs, Xans...",
+  "th": "พวกโคลต์สขายทุกอย่าง ออกซี่ เพิร์ก แซน...",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "I mean, the pills!",
+  "th": "ก็ยาน่ะสิ!",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "They mix 'em with all sorts of sketchy shit,",
+  "th": "พวกมันผสมของไม่น่าไว้ใจสารพัดอย่าง",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "and I'm not gonna lie, some of it's awesome!",
+  "th": "ไม่โกหกนะ บางตัวก็โคตรเด็ด!",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "Dunk only carries a hundred percent pharmaceuticals.",
+  "th": "ดังก์ขายแต่ยาแท้ร้อยเปอร์เซ็นต์",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "Thank you for gettin' me outta there!",
+  "th": "ขอบใจที่พาออกมาจากตรงนั้น!",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "Where the hell did I put 'em? Oh!",
+  "th": "เอาไปไว้ไหนวะเนี่ย? อ้าว!",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "Oh, Dunk. C'mon. Okay.",
+  "th": "โธ่ ดังก์ เอาจริงดิ โอเค",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "Just gimme some time, I'll hook you up.",
+  "th": "ขอเวลาหน่อย เดี๋ยวจัดให้",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "Urgh, so sorry about that.",
+  "th": "เฮ้อ ขอโทษทีนะ",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "He's good for it, he's just stupid.",
+  "th": "เขาไว้ใจได้ แค่โง่ไปหน่อย",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "The fuck am I gonna do for now?",
+  "th": "แล้วตอนนี้จะทำเหี้ยไรดีวะ?",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "Watch your boyfriend in pain, I guess.",
+  "th": "ก็นั่งดูแฟนเจ็บไปก่อนละมั้ง",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "If you get bored of that, I know a guy who could help you.",
+  "th": "ถ้าเบื่อเมื่อไหร่ รู้จักคนที่ช่วยได้นะ",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "If you get bored of that, I know a guy who could help you find a car.",
+  "th": "ถ้าเบื่อแล้ว รู้จักคนช่วยหารถให้ได้",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "Oh, yeah? Mm-hmm.",
+  "th": "เหรอ? อือฮึ",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "So if you happen to, you know, see a ride that speaks to you, or whatever,",
+  "th": "ถ้าบังเอิญเจอรถที่ถูกใจอะไรแบบนั้น",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "Just bring it there. Tell him I sent you.",
+  "th": "ก็เอาไปที่นั่นเลย บอกว่าฉันส่งมา",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "Nah, but you could drop me off in town.",
+  "th": "ไม่ล่ะ แต่แวะส่งในเมืองหน่อยก็ดี",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "Sure, hop in.",
+  "th": "ได้เลย ขึ้นมาสิ",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "You should've said forty dollars!",
+  "th": "น่าจะบอกสี่สิบดอลลาร์ไปเลย!",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "It's cool. I'll work something out.",
+  "th": "ไม่เป็นไร เดี๋ยวจัดการเอง",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "Alright, so here's what we're gonna do. I got a few cars outside.",
+  "th": "โอเค เอาอย่างนี้นะ มีรถจอดอยู่ข้างนอกสองสามคัน",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "So, tell me. You into cars? Or just boostin' 'em?",
+  "th": "ไหนบอกหน่อย ชอบรถหรือแค่ชอบขโมย?",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "Round here, you gonna need it.",
+  "th": "แถวนี้ต้องใช้เยอะเลยล่ะ",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "Hey, you ain't gotta worry 'bout me.",
+  "th": "เฮ้ ไม่ต้องห่วงทางนี้หรอก",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "Okay, so with this kind of job... if you gonna be out gettin' me cars,",
+  "th": "โอเค งานแบบนี้... ถ้าจะออกไปหารถมาให้",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "gotta make sure you're only bringin' me ones worth my time.",
+  "th": "ต้องแน่ใจว่าเอามาแต่คันที่คุ้มเวลาหน่อย",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "Lucky for you, all you gotta do is scan a ride with ya phone.",
+  "th": "โชคดีหน่อย แค่เอามือถือสแกนรถก็พอ",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "Doesn't say it has a tracker on it.",
+  "th": "ไม่เห็นขึ้นว่ามีเครื่องติดตามนะ",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "Alright, last one... what can you tell me?",
+  "th": "โอเค คันสุดท้าย... บอกอะไรได้บ้าง?",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "Any other ones you come across, same thing, leave 'em alone.",
+  "th": "ถ้าเจอคันอื่นแบบเดียวกัน ก็ปล่อยผ่านไปเลย",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "Okay. Say I want one of these rides. How you gonna go about gettin' it?",
+  "th": "โอเค สมมติว่าอยากได้รถพวกนี้สักคัน จะเอามายังไง?",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "Dunno. Punch the window out and hotwire it.",
+  "th": "ไม่รู้สิ ทุบกระจกแล้วต่อสายตรงมั้ง",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "Sounds like work on my end.",
+  "th": "ฟังดูเหมือนเพิ่มงานให้ฉันเลยนะ",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "Pick up that slim jim, it's a little quieter. Might save you a bit of trouble.",
+  "th": "หยิบเหล็กงัดประตูอันนั้นไป เงียบกว่าหน่อย น่าจะลดเรื่องยุ่งได้เยอะ",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "You'll see. Stick that in the Montagne, the one with the alarm.",
+  "th": "เดี๋ยวก็รู้ ลองแหย่ใส่มอนทานเย่คันที่มีสัญญาณกันขโมยดู",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "Have a feel around.",
+  "th": "ลองคลำๆ หาดู",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "Ah, she's in.",
+  "th": "อ่า เข้าล็อกแล้ว",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "Oh, guess I'm a natural.",
+  "th": "โอ้ สงสัยจะมีพรสวรรค์แฮะ",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "I mean, you said it enough times. Older models, no trackers. Nothin' that's gonna get heads turnin'.",
+  "th": "ก็ย้ำมาตั้งหลายรอบแล้วนี่ รุ่นเก่า ไม่มีเครื่องติดตาม ไม่เด่นจนคนเหลียวมอง",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "Right. All the flashy shit is more trouble than it's worth.",
+  "th": "ใช่ พวกของหรูห่าเหวพวกนั้นมันยุ่งยากเกินคุ้ม",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "We really gotta worry about \"flashy shit\" in Port Gellhorn?",
+  "th": "ต้องห่วงเรื่อง \"ของหรูห่าเหว\" ในพอร์ตเกลฮอร์นด้วยเหรอ?",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "Hey, this is Jason. Can't talk right now. Hit me back if you need something.",
+  "th": "เฮ้ เจสันนะ ตอนนี้ไม่สะดวกรับ มีอะไรโทรกลับมาแล้วกัน",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "Hope you're okay, and I got some good news.",
+  "th": "หวังว่าจะสบายดีนะ มีข่าวดีจะบอกด้วย",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "I'm gonna tell you about it when I see you.",
+  "th": "ไว้เจอกันแล้วจะเล่าให้ฟัง",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "We owe that bitch manager lady her rent, so I'm gonna stay out here a while.",
+  "th": "เรายังติดค่าเช่าอีป้าผู้จัดการนั่นอยู่ เลยจะอยู่ข้างนอกต่ออีกสักพัก",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "I met a guy who can help with cars.",
+  "th": "เจอคนที่ช่วยเรื่องรถได้แล้ว",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "Soon as I've made some, I'll come check on you.",
+  "th": "พอหาเงินได้หน่อยจะรีบกลับไปดูนะ",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "She didn't even know he was a cop, I swear to God... Well, it's a good thing she didn't invite him home...",
+  "th": "สาบานเลยว่าเธอไม่รู้ด้วยซ้ำว่าเขาเป็นตำรวจ... ดีนะที่ไม่ได้ชวนเข้าบ้าน...",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "Eh. She wouldn't let her.",
+  "th": "เออ เธอคงไม่ยอมหรอก",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "Alright, cool. You comin' to pick up later?",
+  "th": "โอเค เจ๋ง เดี๋ยวค่อยมารับของทีหลังใช่มั้ย?",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "Kay, well go around back.",
+  "th": "เค งั้นอ้อมไปด้านหลังนะ",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "The only way we're gonna get through this",
+  "th": "ทางเดียวที่เราจะผ่านเรื่องนี้ไปได้",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "Right, hold on. You okay?",
+  "th": "เดี๋ยวก่อน โอเคใช่มั้ย?",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "Yeah, I'm okay. I just need to start looking up some jobs 'cause Frankie is up my ass.",
+  "th": "อืม โอเค แค่ต้องเริ่มหางานทำแล้ว เพราะแฟรงกี้จี้ตูดไม่เลิกเลย",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "Yeah, I gotta get the fuck outta there.",
+  "th": "เออ ต้องรีบไสหัวออกจากที่นั่นให้ได้",
+  "source": "missed",
+  "time": null
+ },
+ {
+  "en": "I hit up Delights.",
+  "th": "ทักไปหาดีไลท์สแล้ว",
+  "source": "missed",
+  "time": null
+ },
+ {
   "en": "Hey, you're a psycho.",
   "th": "เฮ้ แกมันโรคจิต",
   "source": "sirloin_ch1",
@@ -121069,7 +121771,7 @@
  },
  {
   "en": "Now, I'm sure you understand.",
-  "th": "เอาล่ะ ฉันว่าคุณคงเข้าใจนะคะ",
+  "th": "คงเข้าใจนะ",
   "source": "sirloin_ch2",
   "time": 37.28
  },
@@ -121459,7 +122161,7 @@
  },
  {
   "en": "Do me a favor and stay away from that pickup truck.",
-  "th": "ทำตามที่กูบอกแล้วอยู่ห่างๆ รถกระบะคันนั้นไว้",
+  "th": "ช่วยอยู่ให้ห่างจากรถกระบะคันนั้นหน่อย",
   "source": "sirloin_ch2",
   "time": 1768.48
  },
@@ -121597,7 +122299,7 @@
  },
  {
   "en": "Well, well, well. Turns out Princess Perfect isn't so perfect after all.",
-  "th": "โห โห ที่แท้คุณหนูเพอร์เฟกต์ก็ไม่ได้เพอร์เฟกต์นี่หว่า",
+  "th": "แหม ที่แท้แม่คนเพอร์เฟกต์ก็ไม่ได้ดีเด่ขนาดนั้นนี่นา",
   "source": "sirloin_ch2",
   "time": 1870.88
  },
@@ -197335,7 +198037,7 @@
  },
  {
   "en": "Let me call this idiot.",
-  "th": "ให้กูโทรหาไอ้งั่งนี่ก่อน",
+  "th": "ขอโทรหาไอ้โง่นี่ก่อน",
   "source": "sirloin_part06",
   "time": 1668.15
  },
@@ -197473,7 +198175,7 @@
  },
  {
   "en": "One thing I don't do is trackers.",
-  "th": "อย่างนึงที่ฉันไม่รับคือรถติดตัวติดตาม",
+  "th": "อย่างเดียวที่ไม่เอาเลยคือพวกติดเครื่องติดตาม",
   "source": "sirloin_part06",
   "time": 2195.44
  },
@@ -229513,7 +230215,7 @@
  },
  {
   "en": "Sure you do.",
-  "th": "ต้องไปอยู่แล้วสิ",
+  "th": "เออ เชื่อเลย!",
   "source": "sirloin_x_6Ad8FpZzLx4",
   "time": 43.59
  },
@@ -236143,7 +236845,7 @@
  },
  {
   "en": "Stay strong, man.",
-  "th": "เข้มแข็งไว้นะเพื่อน",
+  "th": "สู้ๆ นะเพื่อน!",
   "source": "sirloin_x_eRj_nzPBZe4",
   "time": 7331.28
  },
