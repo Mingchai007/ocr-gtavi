@@ -753,8 +753,8 @@ class SettingsDialog(QDialog):
         f.addRow("", mrow)
         lay.addLayout(f)
         lay.addWidget(hline())
-        lay.addWidget(self._option("web_feed", "ลิงก์ซับพื้นโปร่งใส (TikTok LIVE Studio)",
-                                   "ใส่ใน TikTok เป็นแหล่งภาพแบบ \"ลิงก์\" — ซับลอยบนเกม ไม่มีฉากเขียว ไม่ต้องใช้ OBS"))
+        lay.addWidget(self._option("web_feed", "ลิงก์ซับพื้นโปร่งใส (OBS / TikTok)",
+                                   "OBS: แหล่ง \"เบราว์เซอร์\" 1920×1080 / TikTok: แหล่ง \"ลิงก์\" — ไม่ต้องใช้ฉากเขียว"))
         row = QHBoxLayout()
         row.setSpacing(8)
         self.web_lbl = QLineEdit()
