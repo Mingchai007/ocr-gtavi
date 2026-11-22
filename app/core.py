@@ -278,6 +278,8 @@ class App(QObject):
         self.overlay = SubtitleOverlay({**self.s, "obs_mode": False})
         self.obs = None
         self._sync_obs()
+        self.web = None
+        self._sync_web()
         self.history = HistoryWindow(search_fn=lambda q: self.tr.matcher.search(q))
         self.history.correction.connect(self.apply_correction)
         self.settings_dlg = None
@@ -754,6 +756,31 @@ class App(QObject):
             self.overlay.mirror = None
             self.obs.hide()
 
+    def _sync_web(self):
+        """หน้าเว็บซับพื้นโปร่งใส สำหรับ TikTok LIVE Studio (แหล่งภาพแบบลิงก์)"""
+        if self.s.get("web_feed"):
+            if self.web is None:
+                try:
+                    from app.webfeed import WebFeed
+                    self.web = WebFeed()
+                except Exception as e:
+                    log(f"[web] เปิดไม่ได้: {e}")
+                    self.web = None
+                    return
+                self.web_timer = QTimer(self, interval=100, timeout=self._push_web)
+                self.web_timer.start()
+        elif self.web is not None:
+            self.web_timer.stop()
+            self.web.close()
+            self.web = None
+
+    def _push_web(self):
+        if self.web is not None:
+            self.web.update(self.overlay._blocks() if self.enabled else [], self.s)
+
+    def web_url(self):
+        return self.web.url if self.web is not None else ""
+
     def _sync_live_hint(self):
         """บอกในหน้าหลักว่าตัวแปลสดพร้อมไหม (เปิดแปลสดไว้แต่ไม่มีคีย์ = ไม่ได้แปลจริง)"""
         text, ok = self.tr.status()
@@ -772,6 +799,7 @@ class App(QObject):
             self.tr.configure(s["gemini_key"], s["use_mymemory"])
         self.overlay.apply_settings({**s, "obs_mode": False})
         self._sync_obs()
+        self._sync_web()
         if any(s[k] != old[k] for k in ("region", "brightness", "fps")):
             self.worker.update_settings(s)
         else:
@@ -853,7 +881,8 @@ class App(QObject):
 
     def open_settings(self):
         if self.settings_dlg is None or not self.settings_dlg.isVisible():
-            self.settings_dlg = SettingsDialog(self.s, live_status=self.tr.status, can_report=self.reporter.available)
+            self.settings_dlg = SettingsDialog(self.s, live_status=self.tr.status, can_report=self.reporter.available,
+                                               web_url=self.web_url)
             self.settings_dlg.set_update_status(*self._update_status, busy=self._updating, restart=self._restart_ready)
             self.settings_dlg.update_req.connect(lambda: self.check_update(manual=True))
             self.settings_dlg.restart_req.connect(self.restart)
@@ -875,6 +904,8 @@ class App(QObject):
 
     def quit(self):
         self.reporter.flush(2.0)                    # ส่งประโยคที่ค้างอยู่ก่อนปิด
+        if self.web is not None:
+            self.web.close()
         self.worker.running = False
         self.worker.wait(1500)
         self.tray.hide()

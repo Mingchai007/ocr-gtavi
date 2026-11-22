@@ -151,6 +151,8 @@ class Segmented(QFrame):
             self.group.addButton(b, i)
             lay.addWidget(b, 1)
         self.group.idClicked.connect(self.changed)
+        self.ensurePolished()
+        self.setMinimumHeight(self.sizeHint().height())           # ล็อกความสูง ไม่ให้ตัวหนังสือในปุ่มโดนตัด
 
     def currentIndex(self):
         return self.group.checkedId()

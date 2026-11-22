@@ -541,7 +541,7 @@ class SettingsDialog(QDialog):
     WEIGHTS = [("ปกติ", 400), ("กลาง", 600), ("หนา", 700), ("หนามาก", 900)]
     FPS = [("ประหยัดเครื่อง", 15), ("ปกติ", 30), ("ไวที่สุด", 60)]
 
-    def __init__(self, s, parent=None, live_status=None, can_report=False):
+    def __init__(self, s, parent=None, live_status=None, can_report=False, web_url=None):
         super().__init__(parent)
         self.setObjectName("Root")
         self.setWindowTitle("ตั้งค่า — ซับไทย GTA VI")
@@ -552,6 +552,7 @@ class SettingsDialog(QDialog):
         self._update_status = ("", True)
         self._restart = False
         self.can_report = can_report            # มีปลายทางรับประโยคตกหล่น (data/report_target.json) ไหม
+        self.web_url = web_url                  # ฟังก์ชันคืนลิงก์หน้าเว็บซับ ("" = ยังไม่ได้เปิด)
 
         lay = QVBoxLayout(self)
         lay.setContentsMargins(16, 16, 16, 14)
@@ -653,6 +654,19 @@ class SettingsDialog(QDialog):
         prev.changed.connect(lambda i: self._set("prev_lines", i))
         f.addRow("ประโยคก่อนหน้า", prev)
         lay.addLayout(f)
+        lay.addWidget(hline())
+        lay.addWidget(self._option("web_feed", "ลิงก์ซับพื้นโปร่งใส (TikTok LIVE Studio)",
+                                   "ใส่ใน TikTok เป็นแหล่งภาพแบบ \"ลิงก์\" — ซับลอยบนเกม ไม่มีฉากเขียว ไม่ต้องใช้ OBS"))
+        row = QHBoxLayout()
+        row.setSpacing(8)
+        self.web_lbl = QLineEdit()
+        self.web_lbl.setReadOnly(True)
+        self.web_btn = button(" คัดลอกลิงก์", T.Glyph.COPY)
+        self.web_btn.clicked.connect(self._copy_web_url)
+        row.addWidget(self.web_lbl, 1)
+        row.addWidget(self.web_btn)
+        lay.addLayout(row)
+        self._refresh_web_url()
         lay.addWidget(hline())
         lay.addWidget(self._option("stream_visible", "ให้ OBS / โปรแกรมสตรีมเห็นซับไทย",
                                    "เปิดตอนสตรีมด้วยการจับทั้งจอ — แนะนำตั้งตำแหน่งเป็น \"เหนือซับอังกฤษ\""))
@@ -766,6 +780,25 @@ class SettingsDialog(QDialog):
         row.addWidget(b_log, 1)
         lay.addLayout(row)
 
+    # --- ลิงก์ซับสำหรับ TikTok
+    def _refresh_web_url(self):
+        if not hasattr(self, "web_lbl"):
+            return
+        try:
+            url = self.web_url() if self.web_url else ""
+        except RuntimeError:
+            return
+        self.web_lbl.setText(url or "เปิดสวิตช์ด้านบนก่อน แล้วลิงก์จะขึ้นตรงนี้")
+        self.web_lbl.setEnabled(bool(url))
+        self.web_btn.setEnabled(bool(url))
+
+    def _copy_web_url(self):
+        url = self.web_url() if self.web_url else ""
+        if url:
+            QApplication.clipboard().setText(url)
+            self.web_btn.setText(" คัดลอกแล้ว")
+            QTimer.singleShot(1500, lambda: self.web_btn.setText(" คัดลอกลิงก์"))
+
     # --- หน้าต่างซับแยกแบบเต็มจอ
     def _obs_screen_combo(self):
         from app.control_panel import monitors
@@ -817,6 +850,8 @@ class SettingsDialog(QDialog):
         self.changed.emit(dict(self.s))
         if k in ("live_translate", "use_mymemory", "gemini_key"):
             QTimer.singleShot(0, self._refresh_live_status)
+        if k == "web_feed":
+            QTimer.singleShot(50, self._refresh_web_url)
 
     def _slider(self, k, lo, hi, fmt, scale=1, step=1):
         """แถบเลื่อน + ตัวเลขด้านขวา (scale: ค่าที่เก็บ = ค่าแถบ / scale)"""
