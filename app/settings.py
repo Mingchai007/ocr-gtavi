@@ -9,7 +9,7 @@ PATH = ROOT / "data" / "settings.json"
 CODE_PREFIX = "GTHSUB1:"
 VERSION = 2
 # ค่าที่ผูกกับเครื่อง/จอ/บัญชีของแต่ละคน -> ไม่ใส่ในโค้ดแชร์
-LOCAL_KEYS = {"region", "live_translate", "gemini_key", "use_mymemory", "auto_update", "report_missed", "_v"}
+LOCAL_KEYS = {"region", "screen_place", "screen_pos","live_translate", "gemini_key", "use_mymemory", "auto_update", "report_missed", "_v"}
 
 DEFAULTS = {
     "_v": VERSION,
@@ -32,6 +32,8 @@ DEFAULTS = {
     "position": "cover",         # cover = ทับซับอังกฤษ / above = เหนือกรอบซับ
     "offset_y": 0,               # เลื่อนขึ้น(-)/ลง(+) พิกเซล
     "width_scale": 1.15,         # ความกว้างหน้าต่างซับเทียบกับกรอบซับ
+    "screen_place": "follow",    # ซับบนจอคอม: follow = ตามกรอบซับ / custom = ที่ลากย้ายเอง / hidden = ไม่แสดง
+    "screen_pos": None,          # [x, y] มุมซ้ายบนของซับ เมื่อ screen_place = custom
     "obs_mode": False,           # True = พื้นสีทึบให้ OBS ดูดได้ (Chroma key)
     "obs_color": "#00FF00",
     "obs_screen": -1,            # หน้าต่างซับแยก: -1 = หน้าต่างปกติ, 0,1,.. = เต็มจอบนจอที่เลือก (แบบ Fullscreen Projector)

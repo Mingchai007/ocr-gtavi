@@ -276,6 +276,7 @@ class App(QObject):
         progress("กำลังเตรียมหน้าต่าง…")
 
         self.overlay = SubtitleOverlay({**self.s, "obs_mode": False})
+        self.overlay.moved.connect(self._overlay_moved)
         self.obs = None
         self._sync_obs()
         self.web = None
@@ -782,6 +783,18 @@ class App(QObject):
                 blocks = self.overlay._blocks() if self.enabled else []
             self.web.update(blocks, self.s)
 
+    def _overlay_moved(self, pos):
+        """ผู้ใช้ลากย้ายซับบนจอเสร็จ -> จำตำแหน่ง (None = กดยกเลิก)"""
+        if not pos:
+            return
+        dlg = getattr(self, "settings_dlg", None)
+        try:
+            if dlg is not None:
+                dlg.set_screen_pos(pos)
+        except RuntimeError:
+            pass
+        self.apply_settings({**self.s, "screen_pos": pos, "screen_place": "custom"})
+
     def test_web(self):
         self._web_test_until = time.monotonic() + 8
 
@@ -897,6 +910,7 @@ class App(QObject):
             self.settings_dlg.update_req.connect(lambda: self.check_update(manual=True))
             self.settings_dlg.restart_req.connect(self.restart)
             self.settings_dlg.web_test_req.connect(self.test_web)
+            self.settings_dlg.move_req.connect(self.overlay.start_move)
             self.settings_dlg.changed.connect(lambda s: self.apply_settings({**s, "region": self.s.get("region")}))
             self.settings_dlg.finished.connect(lambda _r: self.overlay.clear_sample())
             self.settings_dlg.show()

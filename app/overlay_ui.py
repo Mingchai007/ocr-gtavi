@@ -145,10 +145,12 @@ def _draw_text(p, s, font, fm, x, y, line, alpha, prefix):
 # ---------------------------------------------------------------- overlay
 class SubtitleOverlay(QWidget):
     PREV_TTL = 10.0     # ประโยคก่อนหน้าแสดงอยู่ได้นานสุดกี่วินาที
+    moved = pyqtSignal(object)   # ย้ายซับบนจอเสร็จ: [x, y] ใหม่ หรือ None = ยกเลิก
 
     def __init__(self, s):
         super().__init__(None)
         self.s = s
+        self.moving = False          # โหมดลากย้ายซับบนจอ (start_move)
         self.current = None          # {"th", "en", "speaker"}
         self.history = []            # [(time, line)]
         self.hide_timer = QTimer(self, singleShot=True, timeout=self._hide_current)
@@ -164,6 +166,9 @@ class SubtitleOverlay(QWidget):
     # --- รูปแบบหน้าต่าง
     def apply_settings(self, s):
         self.s = s
+        if self.moving:                       # กำลังลากย้ายอยู่ -> เก็บค่าไว้ใช้ตอนลากเสร็จ
+            self.update()
+            return
         flags = (Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint
                  | Qt.WindowType.Tool | Qt.WindowType.WindowTransparentForInput)
         was_visible = self.isVisible()
@@ -171,6 +176,8 @@ class SubtitleOverlay(QWidget):
             self.setWindowFlags(flags)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, not s["obs_mode"])
         self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating, True)
+        # "ไม่แสดงบนจอคอม": หน้าต่างยังทำงาน (ลิงก์ TikTok / OBS ยังได้ซับ) แต่มองไม่เห็นบนจอ
+        self.setWindowOpacity(0.0 if s.get("screen_place") == "hidden" else 1.0)
         self.place()
         if was_visible or s["obs_mode"]:
             self.show()
@@ -218,7 +225,68 @@ class SubtitleOverlay(QWidget):
         bottom = (ry + rh) if self.s["position"] == "cover" else ry
         y = bottom - h + self.s["offset_y"]
         x = max(scr.x(), min(x, scr.right() - w))
+        pos = self.s.get("screen_pos")
+        if self.s.get("screen_place") == "custom" and pos and self._on_some_screen(pos[0] + w / 2, pos[1] + h / 2):
+            x, y = pos[0], pos[1]                 # ตำแหน่งที่ผู้ใช้ลากย้ายเอง (เช่น ย้ายออกจากพรีวิว TikTok)
         self.setGeometry(int(x), int(y), int(w), int(h))
+
+    @staticmethod
+    def _on_some_screen(x, y):
+        return any(s.geometry().contains(int(x), int(y)) for s in QGuiApplication.screens())
+
+    # --- ลากย้ายซับบนจอ
+    def start_move(self):
+        """ให้ผู้ใช้ลากซับไปวางตรงไหนก็ได้ (ดับเบิลคลิก/Enter = เสร็จ, Esc = ยกเลิก)"""
+        if self.moving:
+            return
+        self.moving = True
+        self._move_from = self.pos()
+        self._drag = None
+        self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.Tool)
+        self.setWindowOpacity(1.0)
+        self.setCursor(Qt.CursorShape.SizeAllCursor)
+        if not self.current:
+            self.set_sample("ลากซับไปวางตรงที่ต้องการ", "", "เจสัน")
+        self.show()
+        self.raise_()
+        self.activateWindow()
+        self.setFocus()
+        self.update()
+
+    def _finish_move(self, ok):
+        if not self.moving:
+            return
+        self.moving = False
+        self.unsetCursor()
+        pos = [self.x(), self.y()] if ok else None
+        if not ok:
+            self.move(self._move_from)
+        self.clear_sample()
+        self.apply_settings(self.s)
+        self.show()
+        self.moved.emit(pos)
+
+    def mousePressEvent(self, e):
+        if self.moving and e.button() == Qt.MouseButton.LeftButton:
+            self._drag = e.globalPosition().toPoint() - self.pos()
+
+    def mouseMoveEvent(self, e):
+        if self.moving and self._drag is not None:
+            self.move(e.globalPosition().toPoint() - self._drag)
+
+    def mouseReleaseEvent(self, e):
+        self._drag = None
+
+    def mouseDoubleClickEvent(self, e):
+        if self.moving:
+            self._finish_move(True)
+
+    def keyPressEvent(self, e):
+        if self.moving:
+            if e.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter):
+                self._finish_move(True)
+            elif e.key() == Qt.Key.Key_Escape:
+                self._finish_move(False)
 
     # --- ข้อมูลซับ
     def set_line(self, th, en="", speaker="", sample=False):
@@ -330,6 +398,17 @@ class SubtitleOverlay(QWidget):
         p.setRenderHint(QPainter.RenderHint.TextAntialiasing)
         if self.s["obs_mode"]:
             p.fillRect(self.rect(), QColor(self.s["obs_color"]))
+        if self.moving:                           # โหมดลากย้าย: พื้นจางๆ + กรอบเส้นประ + วิธีใช้
+            p.fillRect(self.rect(), QColor(0, 0, 0, 90))
+            p.setPen(QPen(QColor(T.OK), 2, Qt.PenStyle.DashLine))
+            p.drawRect(self.rect().adjusted(1, 1, -2, -2))
+            f = QFont("Leelawadee UI")
+            f.setPointSizeF(10)
+            f.setBold(True)
+            p.setFont(f)
+            p.setPen(QColor("#FFFFFF"))
+            p.drawText(self.rect().adjusted(10, 8, -10, -8), Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop,
+                       "ลากเพื่อย้ายซับ  •  ดับเบิลคลิก หรือ Enter = เสร็จ  •  Esc = ยกเลิก")
         paint_subtitle(p, self.s, self._blocks(), self.width(), self.height() - 12)
 
 
@@ -539,6 +618,7 @@ class SettingsDialog(QDialog):
     update_req = pyqtSignal()                   # ผู้ใช้กด "เช็กอัปเดตตอนนี้"
     restart_req = pyqtSignal()                  # ผู้ใช้กด "รีสตาร์ทเพื่อใช้รุ่นใหม่"
     web_test_req = pyqtSignal()                 # ผู้ใช้กด "ทดสอบ" ลิงก์ซับ (ส่งซับตัวอย่างไปหน้าเว็บ)
+    move_req = pyqtSignal()                     # ผู้ใช้กด "ลากย้ายซับบนจอ"
     WEIGHTS = [("ปกติ", 400), ("กลาง", 600), ("หนา", 700), ("หนามาก", 900)]
     FPS = [("ประหยัดเครื่อง", 15), ("ปกติ", 30), ("ไวที่สุด", 60)]
 
@@ -655,6 +735,22 @@ class SettingsDialog(QDialog):
         prev = Segmented(["ไม่แสดง", "1 บรรทัด", "2", "3"], int(self.s["prev_lines"]))
         prev.changed.connect(lambda i: self._set("prev_lines", i))
         f.addRow("ประโยคก่อนหน้า", prev)
+        # ซับบนจอคอม (ตอนตีกรอบบนพรีวิว TikTok ซับบนจอจะไปทับพรีวิว -> ย้ายออกหรือซ่อนได้ ซับในลิงก์ไม่เปลี่ยน)
+        places = ["follow", "custom", "hidden"]
+        self.place_seg = Segmented(["ตามกรอบซับ", "ที่ย้ายไว้", "ไม่แสดง"],
+                                   places.index(self.s.get("screen_place", "follow")))
+        self.place_seg.changed.connect(self._place_changed)
+        f.addRow("ซับบนจอคอม", self.place_seg)
+        move = button(" ลากย้ายซับบนจอ", T.Glyph.MOVE,
+                      tip="ลากซับบนจอไปไว้ตรงอื่น เช่น ออกจากพรีวิว TikTok — ดับเบิลคลิกหรือ Enter เมื่อเสร็จ")
+        move.clicked.connect(self.move_req)
+        note = QLabel("ไม่มีผลกับซับในลิงก์ TikTok / OBS")
+        note.setObjectName("Muted")
+        mrow = QHBoxLayout()
+        mrow.setSpacing(8)
+        mrow.addWidget(move)
+        mrow.addWidget(note, 1)
+        f.addRow("", mrow)
         lay.addLayout(f)
         lay.addWidget(hline())
         lay.addWidget(self._option("web_feed", "ลิงก์ซับพื้นโปร่งใส (TikTok LIVE Studio)",
@@ -901,6 +997,21 @@ class SettingsDialog(QDialog):
             QTimer.singleShot(0, self._refresh_live_status)
         if k == "web_feed":
             QTimer.singleShot(50, self._refresh_web_url)
+
+    def _place_changed(self, i):
+        place = ["follow", "custom", "hidden"][i]
+        if place == "custom" and not self.s.get("screen_pos"):
+            self.move_req.emit()                 # ยังไม่เคยย้าย -> ให้ลากก่อน (เสร็จแล้ว set_screen_pos จะตั้งเป็น custom)
+            self.place_seg.setCurrentIndex(["follow", "custom", "hidden"].index(self.s.get("screen_place", "follow")))
+            return
+        self._set("screen_place", place)
+
+    def set_screen_pos(self, pos):
+        """ลากย้ายซับบนจอเสร็จ (เรียกจาก core) -> เก็บค่าในหน้านี้ด้วย ไม่ให้ค่าเก่าในหน้าตั้งค่าทับ"""
+        if pos:
+            self.s["screen_pos"] = pos
+            self.s["screen_place"] = "custom"
+            self.place_seg.setCurrentIndex(1)
 
     def _slider(self, k, lo, hi, fmt, scale=1, step=1):
         """แถบเลื่อน + ตัวเลขด้านขวา (scale: ค่าที่เก็บ = ค่าแถบ / scale)"""
