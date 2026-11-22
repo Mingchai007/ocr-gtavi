@@ -103,7 +103,8 @@ class WebFeed:
             crt, key = ensure_cert()
             ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
             ctx.load_cert_chain(str(crt), str(key))
-            for p in range(port + 1, port + 12):
+            # 443 ก่อน: ลิงก์จะไม่มีเลขพอร์ต (https://localtest.me/) — TikTok บางเวอร์ชันไม่รับลิงก์ที่มี :พอร์ต
+            for p in [443] + list(range(port + 1, port + 12)):
                 if p == self.port:
                     continue
                 try:
@@ -130,7 +131,8 @@ class WebFeed:
         """ลิงก์ทั้งหมดที่ใช้ได้ (เผื่อแบบแรกไม่ได้ผล)"""
         out = []
         if self.https_port:
-            out += [f"https://localtest.me:{self.https_port}/", f"https://127.0.0.1.nip.io:{self.https_port}/"]
+            hp = "" if self.https_port == 443 else f":{self.https_port}"
+            out += [f"https://localtest.me{hp}/", f"https://127.0.0.1.nip.io{hp}/"]
         out += [f"http://localtest.me:{self.port}/", f"http://127.0.0.1.nip.io:{self.port}/",
                 f"http://localhost:{self.port}/"]
         return out
