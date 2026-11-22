@@ -134,6 +134,7 @@ class Segmented(QFrame):
     def __init__(self, labels, current=0, icons=None, parent=None):
         super().__init__(parent)
         self.setObjectName("Inset")
+        self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)   # ห้ามถูกบีบจนตัวหนังสือขาด
         lay = QHBoxLayout(self)
         lay.setContentsMargins(4, 4, 4, 4)
         lay.setSpacing(4)

@@ -24,7 +24,7 @@ from app.control_panel import ControlPanel, auto_region, detect_subtitle_region,
 from app.live_translate import SubtitleTranslator, looks_like_dialogue
 from app.matcher import ROOT
 from app.ocr_engine import OcrEngine
-from app.overlay_ui import HistoryWindow, ObsFeed, RegionSelector, SettingsDialog, SubtitleOverlay
+from app.overlay_ui import HistoryWindow, ObsFeed, RegionSelector, SettingsDialog, SubtitleOverlay, game_monitor
 from app.widgets import polish_popup
 
 SPEAKER = re.compile(r"^\s*([A-Z][\w'.\-]*(?: [A-Z][\w'.\-]*){0,2}):\s*(.+)$", re.S)
@@ -737,12 +737,17 @@ class App(QObject):
     def _sync_obs(self):
         """โหมด OBS: เปิดหน้าต่างพื้นเขียวแยก ให้ OBS จับภาพ"""
         if self.s.get("obs_mode"):
+            s = self.s
+            if s.get("obs_screen", -1) >= 0 and game_monitor(s.get("region")) == s["obs_screen"]:
+                s = {**s, "obs_screen": -1}         # เต็มจอบนจอเกม = บังเกม OCR อ่านซับไม่ได้ -> ใช้หน้าต่างปกติแทน
+                log("[obs] จอที่เลือกแสดงเต็มจอคือจอเกม -> ใช้หน้าต่างปกติแทน")
             if self.obs is None:
-                self.obs = ObsFeed(self.s)
+                self.obs = ObsFeed(s)
                 self.obs.setWindowIcon(T.app_icon())
                 self.obs.resize(1280, 220)
                 self.obs.set_line("ซับไทยจะขึ้นตรงนี้ (หน้าต่างสำหรับ OBS)", "", "")
-            self.obs.apply_settings(self.s)
+                self.obs.exit_fullscreen.connect(lambda: self.apply_settings({**self.s, "obs_screen": -1}))
+            self.obs.apply_settings(s)
             self.obs.show()
             self.overlay.mirror = self.obs
         elif self.obs is not None:
@@ -873,4 +878,4 @@ class App(QObject):
         self.worker.running = False
         self.worker.wait(1500)
         self.tray.hide()
-        self.qapp.quit()
+        self.qapp.exit(0)                           # ออกทันที (quit() ถามหน้าต่างก่อน และหน้าต่างอาจปฏิเสธการปิด)

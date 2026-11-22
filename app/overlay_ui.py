@@ -6,7 +6,7 @@ import time
 from PyQt6.QtCore import QEvent, QRect, QRectF, QSize, Qt, QTimer, QUrl, pyqtSignal
 from PyQt6.QtGui import (QColor, QDesktopServices, QFont, QFontMetricsF, QGuiApplication, QLinearGradient, QPainter,
                          QPainterPath, QPen, QRadialGradient)
-from PyQt6.QtWidgets import (QApplication, QDialog, QFontComboBox, QFormLayout, QHBoxLayout, QLabel, QLineEdit,
+from PyQt6.QtWidgets import (QApplication, QComboBox, QDialog, QFontComboBox, QFormLayout, QHBoxLayout, QLabel, QLineEdit,
                              QListWidget, QListWidgetItem, QMenu, QMessageBox, QSlider, QSpinBox, QStackedWidget, QStyle,
                              QStyledItemDelegate, QVBoxLayout, QWidget)
 
@@ -15,6 +15,21 @@ from app import theme as T
 from app.widgets import ColorButton, OptionRow, Segmented, button, card, hline, polish_popup
 
 WDA_NONE, WDA_EXCLUDEFROMCAPTURE = 0x0, 0x11
+
+
+def game_monitor(region):
+    """ลำดับจอ (แบบ mss) ที่กรอบซับเกมอยู่ หรือ None"""
+    if not region:
+        return None
+    try:
+        from app.control_panel import monitors
+        cx, cy = region["left"] + region["width"] / 2, region["top"] + region["height"] / 2
+        for i, m in enumerate(monitors()):
+            if m["left"] <= cx < m["left"] + m["width"] and m["top"] <= cy < m["top"] + m["height"]:
+                return i
+    except Exception:
+        pass
+    return None
 
 
 def screen_dpr():
@@ -319,16 +334,54 @@ class SubtitleOverlay(QWidget):
 
 
 class ObsFeed(SubtitleOverlay):
-    """หน้าต่างพื้นสีเขียวแยกต่างหาก ให้ OBS ใช้ Window Capture + Chroma Key
-    (ไม่ทับเกม จึงไม่บังซับอังกฤษที่ OCR ต้องอ่าน วางไว้ตรงไหนก็ได้ แม้ถูกหน้าต่างอื่นบัง)"""
+    """หน้าต่างพื้นสีทึบแยกต่างหาก ให้ OBS / TikTok LIVE Studio จับภาพ (Window Capture หรือจับทั้งจอ)
+    (ไม่ทับเกม จึงไม่บังซับอังกฤษที่ OCR ต้องอ่าน)
+    เลือกให้แสดงเต็มจอบนจอที่สองได้ แบบ Fullscreen Projector ของ OBS — ดับเบิลคลิกหรือกด Esc เพื่อออกจากเต็มจอ"""
+    exit_fullscreen = pyqtSignal()
 
     def apply_settings(self, s):
         self.s = {**s, "obs_mode": True, "prev_lines": s.get("prev_lines", 1)}
-        if self.windowFlags() != Qt.WindowType.Window:
-            self.setWindowFlags(Qt.WindowType.Window)
         self.setWindowTitle("GTA TH Sub - OBS")
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, False)
+        self._set_fullscreen(s.get("obs_screen", -1))
         self.update()
+
+    def _set_fullscreen(self, index):
+        if getattr(self, "_fs_index", None) == index:
+            return
+        self._fs_index = index
+        screen = None
+        if index is not None and index >= 0:
+            try:
+                from app.control_panel import screen_for_monitor
+                screen = screen_for_monitor(index)
+            except Exception:
+                screen = None
+        was_visible = self.isVisible()
+        if screen is not None:
+            self.setWindowFlags(Qt.WindowType.Window | Qt.WindowType.FramelessWindowHint)
+            self.setGeometry(screen.geometry())
+            if was_visible:
+                self.showFullScreen()
+        else:
+            self.setWindowFlags(Qt.WindowType.Window)
+            if was_visible:
+                self.showNormal()
+            self.resize(1280, 220)
+
+    def show(self):
+        if getattr(self, "_fs_index", -1) is not None and getattr(self, "_fs_index", -1) >= 0:
+            self.showFullScreen()
+        else:
+            super().show()
+
+    def mouseDoubleClickEvent(self, e):
+        if getattr(self, "_fs_index", -1) >= 0:
+            self.exit_fullscreen.emit()
+
+    def keyPressEvent(self, e):
+        if e.key() == Qt.Key.Key_Escape and getattr(self, "_fs_index", -1) >= 0:
+            self.exit_fullscreen.emit()
 
     def place(self):
         pass
@@ -340,8 +393,14 @@ class ObsFeed(SubtitleOverlay):
         pass
 
     def closeEvent(self, e):
-        e.ignore()
-        self.showMinimized()
+        if not e.spontaneous():              # โปรแกรมสั่งปิด (ปิดโปรแกรม) -> ปิดได้
+            e.accept()
+            return
+        e.ignore()                           # ผู้ใช้กดกากบาท -> แค่ย่อ (OBS/TikTok ยังจับหน้าต่างได้ตอนเปิดกลับ)
+        if self.isFullScreen():
+            self.exit_fullscreen.emit()
+        else:
+            self.showMinimized()
 
 
 # ---------------------------------------------------------------- เลือกกรอบซับ
@@ -596,13 +655,18 @@ class SettingsDialog(QDialog):
         lay.addLayout(f)
         lay.addWidget(hline())
         lay.addWidget(self._option("stream_visible", "ให้ OBS / โปรแกรมสตรีมเห็นซับไทย",
-                                   "เปิดตอนสตรีมด้วย Display Capture หรือ Game Capture — ปิดไว้ คนดูจะไม่เห็นซับไทย "
-                                   "(แนะนำตั้งตำแหน่งเป็น \"เหนือซับอังกฤษ\" ไม่งั้นโปรแกรมอาจอ่านซับไทยของตัวเอง)"))
+                                   "เปิดตอนสตรีมด้วยการจับทั้งจอ — แนะนำตั้งตำแหน่งเป็น \"เหนือซับอังกฤษ\""))
         lay.addWidget(self._option("obs_mode", "โหมด OBS (หน้าต่างแยก)",
-                                   "เปิดหน้าต่างพื้นสีทึบแยกต่างหาก ให้ OBS จับด้วย Window Capture + Chroma key"))
+                                   "หน้าต่างซับแยก ให้ OBS / TikTok จับภาพ (เลือกเต็มจอบนจอสองได้ด้านล่าง)"))
         f2 = self._form()
         f2.addRow("สีพื้นหน้าต่าง OBS", self._color("obs_color", "สีพื้น OBS"))
+        f2.addRow("แสดงหน้าต่างแยก", self._obs_screen_combo())
         lay.addLayout(f2)
+        self.obs_screen_note = QLabel()
+        self.obs_screen_note.setObjectName("Muted")
+        self.obs_screen_note.setWordWrap(True)
+        lay.addWidget(self.obs_screen_note)
+        self._obs_screen_hint()
 
     def _page_translate(self, lay):
         lay.addWidget(self._option("live_translate", "แปลสดประโยคที่ไม่มีในคลัง",
@@ -701,6 +765,33 @@ class SettingsDialog(QDialog):
         row.addWidget(b_dir, 1)
         row.addWidget(b_log, 1)
         lay.addLayout(row)
+
+    # --- หน้าต่างซับแยกแบบเต็มจอ
+    def _obs_screen_combo(self):
+        from app.control_panel import monitors
+        cb = QComboBox()
+        cb.addItem("หน้าต่างปกติ (ลากปรับขนาดได้)", -1)
+        try:
+            for i, m in enumerate(monitors()):
+                cb.addItem(f"เต็มจอ — จอ {i + 1}  {m['width']}×{m['height']}", i)
+        except Exception:
+            pass
+        cb.setCurrentIndex(max(0, cb.findData(int(self.s.get("obs_screen", -1)))))
+        cb.currentIndexChanged.connect(lambda i: (self._set("obs_screen", cb.itemData(i)), self._obs_screen_hint()))
+        polish_popup(cb)
+        return cb
+
+    def _obs_screen_hint(self):
+        idx = int(self.s.get("obs_screen", -1))
+        if idx < 0:
+            text, warn = "", False
+        elif game_monitor(self.s.get("region")) == idx:
+            text, warn = "จอนี้คือจอที่โปรแกรมอ่านซับเกมอยู่ — ถ้าแสดงเต็มจอตรงนี้จะบังเกม ให้เลือกจออื่น", True
+        else:
+            text, warn = "ดับเบิลคลิกหรือกด Esc บนจอนั้นเพื่อออกจากเต็มจอ", False
+        self.obs_screen_note.setText(text)
+        self.obs_screen_note.setVisible(bool(text))
+        self.obs_screen_note.setStyleSheet(f"color:{T.WARN};" if warn else "")
 
     # --- อัปเดตคลัง
     def _ask_update(self):

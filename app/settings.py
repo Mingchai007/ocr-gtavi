@@ -34,6 +34,7 @@ DEFAULTS = {
     "width_scale": 1.15,         # ความกว้างหน้าต่างซับเทียบกับกรอบซับ
     "obs_mode": False,           # True = พื้นสีทึบให้ OBS ดูดได้ (Chroma key)
     "obs_color": "#00FF00",
+    "obs_screen": -1,            # หน้าต่างซับแยก: -1 = หน้าต่างปกติ, 0,1,.. = เต็มจอบนจอที่เลือก (แบบ Fullscreen Projector)
     "stream_visible": False,     # True = ให้ OBS/โปรแกรมจับภาพเห็นซับไทยบนจอ (สตรีมด้วย Display/Game Capture)
     # การทำงาน
     "fps": 30,                   # เช็กซับบนจอกี่ครั้งต่อวินาที (15 ประหยัด / 30 ปกติ / 60 ไวสุด)

@@ -402,5 +402,8 @@ class ControlPanel(QWidget):
         self.live.show_reading(en, th, ms, state)
 
     def closeEvent(self, e):
-        e.ignore()
+        if not e.spontaneous():              # โปรแกรมสั่งปิด -> ปิดได้
+            e.accept()
+            return
+        e.ignore()                           # ผู้ใช้กดกากบาท -> ซ่อนไว้ โปรแกรมยังทำงานที่ไอคอนข้างนาฬิกา
         self.hide()
