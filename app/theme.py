@@ -239,6 +239,17 @@ def dark_titlebar(widget):
         for attr, col in ((35, BG), (34, STROKE)):                   # สีแถบชื่อ / สีขอบ (Windows 11)
             val = ctypes.c_int(_colorref(col))
             dwm.DwmSetWindowAttribute(hwnd, attr, ctypes.byref(val), 4)
+        # Windows 10 ไม่วาดแถบชื่อใหม่เองหลังเปลี่ยนโหมด -> สั่งวาดขอบหน้าต่างใหม่ทันที
+        # SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED
+        ctypes.windll.user32.SetWindowPos(hwnd, 0, 0, 0, 0, 0, 0x0002 | 0x0001 | 0x0004 | 0x0010 | 0x0020)
+    except Exception:
+        pass
+
+
+def force_dark(qapp):
+    """ให้ Qt ใช้โหมดมืดเสมอ (แถบชื่อหน้าต่าง/กล่องข้อความดำตั้งแต่สร้าง แม้ Windows ตั้งเป็นโหมดสว่าง)"""
+    try:
+        qapp.styleHints().setColorScheme(Qt.ColorScheme.Dark)       # Qt 6.8 ขึ้นไป
     except Exception:
         pass
 

@@ -118,6 +118,7 @@ def main():
 
     qapp = QApplication(sys.argv)
     qapp.setStyle("Fusion")
+    T.force_dark(qapp)
     qapp.setApplicationName("GTA6ThaiSub")
     qapp.setWindowIcon(T.app_icon())
     qapp.setStyleSheet(T.stylesheet())

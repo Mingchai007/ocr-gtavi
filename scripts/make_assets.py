@@ -1,4 +1,6 @@
-"""สร้างไฟล์ภาพของโปรแกรมจากโลโก้ต้นฉบับ (assets_src/logo.png — โลโก้สีขาวพื้นโปร่งใส)
+"""สร้างไฟล์ภาพของโปรแกรมจากโลโก้ต้นฉบับใน assets_src/
+   - logo.png พื้นโปร่งใส  หรือ
+   - logo.jpg / logo.png โลโก้สีขาวบนพื้นดำ (ใช้ความสว่างแทนพื้นโปร่งใส)
 
 รัน:  .\\.venv\\Scripts\\python.exe scripts\\make_assets.py
 
@@ -16,19 +18,40 @@ import cv2
 import numpy as np
 
 ROOT = Path(__file__).resolve().parent.parent
-SRC = ROOT / "assets_src" / "logo.png"
+SRC_DIR = ROOT / "assets_src"
 OUT = ROOT / "app" / "assets"
 
-# ไล่สีพื้นไอคอน (มุมซ้ายบน -> ขวาล่าง) โทนพระอาทิตย์ตก Vice City
-GRADIENT = [(0.0, (255, 92, 168)), (0.52, (190, 74, 232)), (1.0, (86, 62, 245))]      # RGB
+# ไล่สีพื้นไอคอน (มุมซ้ายบน -> ขวาล่าง) — ดำเทาเข้ากับธีมโปรแกรมและโลโก้ขาวบนดำ
+GRADIENT = [(0.0, (46, 46, 46)), (0.55, (20, 20, 20)), (1.0, (8, 8, 8))]      # RGB
+RING = (78, 78, 78)                                                           # สีขอบไอคอน (RGB)
 ICO_SIZES = [16, 20, 24, 32, 40, 48, 64, 96, 128, 256]
 
 
+def find_source():
+    for name in ("logo.png", "logo.jpg", "logo.jpeg", "logo.webp"):
+        if (SRC_DIR / name).exists():
+            return SRC_DIR / name
+    raise SystemExit(f"ไม่เจอโลโก้ใน {SRC_DIR} (logo.png หรือ logo.jpg)")
+
+
 def read_rgba(path):
+    """คืนภาพ BGRA: ถ้าไม่มีพื้นโปร่งใส (เช่น JPG) ถือว่าเป็นโลโก้สว่างบนพื้นมืด -> ใช้ความสว่างเป็นความทึบ"""
     img = cv2.imdecode(np.fromfile(str(path), np.uint8), cv2.IMREAD_UNCHANGED)
-    if img is None or img.ndim != 3 or img.shape[2] != 4:
-        raise SystemExit(f"ต้องเป็น PNG ที่มีพื้นโปร่งใส: {path}")
-    return img
+    if img is None:
+        raise SystemExit(f"เปิดไฟล์ภาพไม่ได้: {path}")
+    if img.ndim == 2:
+        img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
+    if img.shape[2] == 4 and img[:, :, 3].min() < 250:
+        return img                                                # PNG พื้นโปร่งใสอยู่แล้ว
+    gray = cv2.cvtColor(img[:, :, :3], cv2.COLOR_BGR2GRAY).astype(np.float32)
+    corners = np.concatenate([gray[:20, :20].ravel(), gray[:20, -20:].ravel(), gray[-20:, :20].ravel(), gray[-20:, -20:].ravel()])
+    if corners.mean() > 128:
+        gray = 255 - gray                                         # โลโก้มืดบนพื้นสว่าง -> กลับด้าน
+    bg = float(np.percentile(corners if corners.mean() <= 128 else 255 - corners, 90))
+    alpha = np.clip((gray - bg - 8) * 255.0 / max(1.0, 235 - bg), 0, 255)     # ตัดเงา/สัญญาณรบกวนของ JPG ที่พื้น
+    out = np.full(img.shape[:2] + (4,), 255, np.uint8)
+    out[:, :, 3] = alpha.astype(np.uint8)
+    return out
 
 
 def write_png(path, bgra):
@@ -84,6 +107,9 @@ def make_tile(src, size=1024, logo_frac=0.80, shadow=True):
     if shadow:
         sh = cv2.GaussianBlur(np.roll(la, round(size * 0.012), axis=0), (0, 0), size * 0.014) * 0.38
         rgb *= (1 - sh)[..., None]
+    # ขอบเทาบางๆ รอบไอคอน -> ไม่กลืนไปกับทาสก์บาร์/พื้นหลังสีเข้ม
+    ring = np.clip(mask - rounded_mask(size, margin + max(2, round(size * 0.022)), round(size * 0.2)), 0, 1)
+    rgb = rgb * (1 - ring[..., None]) + np.array(RING, np.float32) * ring[..., None]
     rgb = rgb * (1 - la[..., None]) + 255 * la[..., None]
     out = np.zeros((size, size, 4), np.uint8)
     out[:, :, :3] = np.clip(rgb[:, :, ::-1], 0, 255)                # RGB -> BGR
@@ -145,7 +171,9 @@ def glyph(points, size=24, color=(181, 147, 154), thick=2.6, closed=False):
 
 
 def main():
-    src = read_rgba(Path(sys.argv[1]) if len(sys.argv) > 1 else SRC)
+    path = Path(sys.argv[1]) if len(sys.argv) > 1 else find_source()
+    print(f"ใช้โลโก้: {path.relative_to(ROOT) if path.is_relative_to(ROOT) else path}")
+    src = read_rgba(path)
     OUT.mkdir(parents=True, exist_ok=True)
 
     big = make_tile(src, 1024)

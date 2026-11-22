@@ -159,17 +159,23 @@ class SubtitleOverlay(QWidget):
         self.place()
         if was_visible or s["obs_mode"]:
             self.show()
+        self._apply_capture()
         self.update()
+
+    def _apply_capture(self):
+        """ปกติซ่อนหน้าต่างซับจากโปรแกรมจับภาพทุกตัว (รวมถึง OCR ของเราเอง -> ไม่อ่านซับไทยของตัวเอง)
+        ถ้าผู้ใช้เปิด "ให้ OBS เห็นซับไทย" (สตรีม) หรือโหมด OBS -> ให้จับภาพได้"""
+        if not self.isVisible():
+            return
+        visible = self.s.get("obs_mode") or self.s.get("stream_visible")
+        try:
+            ctypes.windll.user32.SetWindowDisplayAffinity(int(self.winId()), WDA_NONE if visible else WDA_EXCLUDEFROMCAPTURE)
+        except Exception:
+            pass
 
     def showEvent(self, e):
         super().showEvent(e)
-        # ไม่ให้โปรแกรมจับภาพ (รวมถึง OCR ของเราเอง) เห็นหน้าต่างนี้ -> OCR ไม่อ่านซับไทยของตัวเอง
-        # โหมด OBS ต้องให้จับภาพได้ จึงปิดตัวนี้
-        try:
-            ctypes.windll.user32.SetWindowDisplayAffinity(
-                int(self.winId()), WDA_NONE if self.s["obs_mode"] else WDA_EXCLUDEFROMCAPTURE)
-        except Exception:
-            pass
+        self._apply_capture()
 
     def place(self):
         r = self.s.get("region")
@@ -589,7 +595,10 @@ class SettingsDialog(QDialog):
         f.addRow("ประโยคก่อนหน้า", prev)
         lay.addLayout(f)
         lay.addWidget(hline())
-        lay.addWidget(self._option("obs_mode", "โหมด OBS",
+        lay.addWidget(self._option("stream_visible", "ให้ OBS / โปรแกรมสตรีมเห็นซับไทย",
+                                   "เปิดตอนสตรีมด้วย Display Capture หรือ Game Capture — ปิดไว้ คนดูจะไม่เห็นซับไทย "
+                                   "(แนะนำตั้งตำแหน่งเป็น \"เหนือซับอังกฤษ\" ไม่งั้นโปรแกรมอาจอ่านซับไทยของตัวเอง)"))
+        lay.addWidget(self._option("obs_mode", "โหมด OBS (หน้าต่างแยก)",
                                    "เปิดหน้าต่างพื้นสีทึบแยกต่างหาก ให้ OBS จับด้วย Window Capture + Chroma key"))
         f2 = self._form()
         f2.addRow("สีพื้นหน้าต่าง OBS", self._color("obs_color", "สีพื้น OBS"))
