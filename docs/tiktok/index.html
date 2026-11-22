@@ -55,7 +55,7 @@ const port = q.get("p") || "8765";
 const LOCAL = /^(127\.|localhost$|localtest\.me$|.*\.nip\.io$)/.test(location.hostname);
 const SOURCES = LOCAL ? ["/state"] : [`http://127.0.0.1:${port}/state`, `http://localhost:${port}/state`,
                                       `https://localtest.me/state`];
-let src = 0, fails = 0;
+let src = 0, fails = 0, connected = false, everConnected = false, hideT = 0;
 function status(msg) {
   let el = document.getElementById("st");
   if (!msg) { if (el) el.remove(); return; }
@@ -66,13 +66,21 @@ async function tick() {
   try {
     const r = await fetch(SOURCES[src], {cache: "no-store"});
     const t = await r.text();
-    fails = 0; status("");
+    fails = 0;
+    if (!connected) {   // เพิ่งต่อติด -> บอกให้รู้ว่าลิงก์ใช้ได้ แล้วหายเองใน 5 วินาที
+      connected = true; status("✓ เชื่อมต่อโปรแกรมซับไทยแล้ว");
+      clearTimeout(hideT); hideT = setTimeout(() => { if (connected) status(""); }, 5000);
+    }
     if (t !== last) { last = t; render(JSON.parse(t)); }
   } catch (e) {
     // โปรแกรมซับปิดอยู่ / ทางนี้ถูกบล็อก -> ลองทางถัดไป
     src = (src + 1) % SOURCES.length;
-    if (++fails >= SOURCES.length * 3) status("รอโปรแกรมซับไทย… (เปิดโปรแกรม แล้วเปิดสวิตช์ \"ลิงก์ซับพื้นโปร่งใส\")");
+    if (++fails >= SOURCES.length * 3 || !everConnected) {
+      connected = false;
+      status("รอโปรแกรมซับไทย… (เปิดโปรแกรม แล้วเปิดสวิตช์ \"ลิงก์ซับพื้นโปร่งใส\")");
+    }
   }
+  everConnected = everConnected || connected;
   setTimeout(tick, fails ? 400 : 100);
 }
 tick();

@@ -776,7 +776,14 @@ class App(QObject):
 
     def _push_web(self):
         if self.web is not None:
-            self.web.update(self.overlay._blocks() if self.enabled else [], self.s)
+            if time.monotonic() < getattr(self, "_web_test_until", 0):     # ปุ่ม "ทดสอบ" ในหน้าตั้งค่า
+                blocks = [("ทดสอบซับไทย — ถ้าเห็นบรรทัดนี้ในพรีวิว แปลว่าลิงก์ใช้ได้", 1.0, 1.0, "เจสัน")]
+            else:
+                blocks = self.overlay._blocks() if self.enabled else []
+            self.web.update(blocks, self.s)
+
+    def test_web(self):
+        self._web_test_until = time.monotonic() + 8
 
     def web_url(self):
         return self.web.url if self.web is not None else ""
@@ -889,6 +896,7 @@ class App(QObject):
             self.settings_dlg.set_update_status(*self._update_status, busy=self._updating, restart=self._restart_ready)
             self.settings_dlg.update_req.connect(lambda: self.check_update(manual=True))
             self.settings_dlg.restart_req.connect(self.restart)
+            self.settings_dlg.web_test_req.connect(self.test_web)
             self.settings_dlg.changed.connect(lambda s: self.apply_settings({**s, "region": self.s.get("region")}))
             self.settings_dlg.finished.connect(lambda _r: self.overlay.clear_sample())
             self.settings_dlg.show()

@@ -538,6 +538,7 @@ class SettingsDialog(QDialog):
     changed = pyqtSignal(dict)
     update_req = pyqtSignal()                   # ผู้ใช้กด "เช็กอัปเดตตอนนี้"
     restart_req = pyqtSignal()                  # ผู้ใช้กด "รีสตาร์ทเพื่อใช้รุ่นใหม่"
+    web_test_req = pyqtSignal()                 # ผู้ใช้กด "ทดสอบ" ลิงก์ซับ (ส่งซับตัวอย่างไปหน้าเว็บ)
     WEIGHTS = [("ปกติ", 400), ("กลาง", 600), ("หนา", 700), ("หนามาก", 900)]
     FPS = [("ประหยัดเครื่อง", 15), ("ปกติ", 30), ("ไวที่สุด", 60)]
 
@@ -664,8 +665,12 @@ class SettingsDialog(QDialog):
         self.web_lbl.setReadOnly(True)
         self.web_btn = button(" คัดลอกลิงก์", T.Glyph.COPY)
         self.web_btn.clicked.connect(self._copy_web_url)
+        self.web_test = button(" ทดสอบ", T.Glyph.PLAY if hasattr(T.Glyph, "PLAY") else None,
+                               tip="ส่งซับตัวอย่างไปที่หน้าเว็บ 8 วินาที — ดูในพรีวิว TikTok ว่าขึ้นไหม")
+        self.web_test.clicked.connect(self.web_test_req)
         row.addWidget(self.web_lbl, 1)
         row.addWidget(self.web_btn)
+        row.addWidget(self.web_test)
         lay.addLayout(row)
         row = QHBoxLayout()
         row.setSpacing(8)
@@ -806,6 +811,7 @@ class SettingsDialog(QDialog):
             self.web_lbl.setToolTip("ถ้า TikTok ไม่รับลิงก์นี้ ลองแบบอื่น:\n" + "\n".join(alts) if alts else "")
         self.web_lbl.setEnabled(bool(url))
         self.web_btn.setEnabled(bool(url))
+        self.web_test.setEnabled(bool(url))
         self.cert_lbl.setVisible(bool(url))
         self.cert_btn.setVisible(False)       # ลิงก์หลักเป็นเว็บสาธารณะแล้ว ไม่ต้องติดตั้งใบรับรอง
         if url:
